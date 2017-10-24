@@ -3,7 +3,7 @@ using System.Linq;
 using System.Reflection;
 using Starcounter;
 
-namespace RESTarExample
+namespace RESTarSQLiteExample
 {
     /// <summary>
     /// This class provides static methods for database queries in the DRTB system.

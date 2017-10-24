@@ -3,33 +3,29 @@ using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
 using Newtonsoft.Json.Linq;
-using RESTar;
-using RESTar.Resources;
 using RESTar.SQLite;
 using Starcounter;
+using RESTar;
+using RESTar.Resources;
 
 // ReSharper disable UnassignedGetOnlyAutoProperty
 // ReSharper disable UnusedMember.Global
 
 #pragma warning disable 1591
 
-namespace RESTarExample
+namespace RESTarSQLiteExample
 {
     public static class Program
     {
-        public static void Main()
-        {
-            RESTarConfig.Init
-            (
-                requireApiKey: true,
-                allowAllOrigins: false,
-                viewEnabled: true,
-                configFilePath: "C:\\Mopedo\\Mopedo.config",
-                lineEndings: LineEndings.Linux,
-                resourceProviders: new[] {new SQLiteProvider(@"C:\RESTarTEst", "RESTarTest")}
-            );
-            TestDatabase.Init();
-        }
+        public static void Main() => RESTarConfig.Init
+        (
+            requireApiKey: true,
+            allowAllOrigins: false,
+            viewEnabled: true,
+            configFilePath: "C:\\Mopedo\\Mopedo.config",
+            lineEndings: LineEndings.Linux,
+            resourceProviders: new[] {new SQLiteProvider(@"C:\RESTarTEst", "RESTarTest")}
+        );
     }
 
     [SQLite, RESTar]
