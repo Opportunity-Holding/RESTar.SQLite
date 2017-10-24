@@ -20,8 +20,5 @@
     <licenseUrl>https://goo.gl/eJS8o9</licenseUrl>
     <projectUrl>https://goo.gl/TIkN7m</projectUrl>
     <iconUrl>https://storage.googleapis.com/mopedo-resources/RESTar_logo.png</iconUrl>
-    <dependencies>
-      <dependency id="RESTar" version="0.2.22" />
-    </dependencies>
   </metadata>
 </package>
