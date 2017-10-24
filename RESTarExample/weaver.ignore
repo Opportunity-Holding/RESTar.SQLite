@@ -1,0 +1,13 @@
+﻿log4net.dll
+Newtonsoft.Json.dll
+mscorlib.dll
+Sigil.dll
+Jil.dll
+ICSharpCode.SharpZipLib
+DocumentFormat.OpenXML
+ClosedXml.dll
+Excel
+System.ValueTuple
+EntityFrameWork
+System.Data.SQLite
+SQLite.Interop

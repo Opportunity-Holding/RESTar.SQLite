@@ -1,0 +1,60 @@
+﻿
+    /*INPUT*/
+    label {
+        font-family: "Segoe UI";
+        text-transform: uppercase;
+        background-color: transparent;
+        border: 0px solid #1A8EDB;
+
+        font-size: 65%;
+        color: #95989A;
+    }
+
+    label > input[type="text"] {
+        font-size: 16px;
+        font-family: "Segoe UI Semibold";
+        color:#95989A;
+        border: none;
+        background-color: transparent;
+        width: 100%;
+    }
+
+    label input:last-child {
+        border-bottom: 1px solid #1A8EDB;
+        margin-bottom:10px;
+    }
+
+    label input, input[type="text"]:focus {
+        outline: none;
+    }
+
+    label input[type="number"] {
+        display: block;
+    }
+        
+    label input[type="checkbox"] {
+        display: block;
+    }
+
+    label input[type="checkbox"]:last-child {
+        border-bottom: 0px;
+        margin-top:10px;
+    }
+
+
+    lable, textarea {
+        font-size: 16px;
+        font-family: "Segoe UI Semibold";
+        display:block;
+        min-width:400px;
+        border: 1px solid #1A8EDB;
+    }
+
+    /* Radio buttons */
+    paper-radio-button::shadow #onRadio {
+        background-color: #1A8EDB;
+    }
+    paper-radio-button[checked]::shadow #offRadio {
+        border-color: #1A8EDB;
+    }
+    
