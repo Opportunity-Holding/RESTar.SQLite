@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27004.2005
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "temp", "temp\temp.csproj", "{5E56230F-0EEE-4536-A8E9-6643AC86FE5A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RESTar.SQLite", "RESTar.SQLite\RESTar.SQLite.csproj", "{ADAB3A82-32D7-421D-84E8-8A1C4708967B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,10 +11,10 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{5E56230F-0EEE-4536-A8E9-6643AC86FE5A}.Debug|x64.ActiveCfg = Debug|x64
-		{5E56230F-0EEE-4536-A8E9-6643AC86FE5A}.Debug|x64.Build.0 = Debug|x64
-		{5E56230F-0EEE-4536-A8E9-6643AC86FE5A}.Release|x64.ActiveCfg = Release|x64
-		{5E56230F-0EEE-4536-A8E9-6643AC86FE5A}.Release|x64.Build.0 = Release|x64
+		{ADAB3A82-32D7-421D-84E8-8A1C4708967B}.Debug|x64.ActiveCfg = Debug|x64
+		{ADAB3A82-32D7-421D-84E8-8A1C4708967B}.Debug|x64.Build.0 = Debug|x64
+		{ADAB3A82-32D7-421D-84E8-8A1C4708967B}.Release|x64.ActiveCfg = Release|x64
+		{ADAB3A82-32D7-421D-84E8-8A1C4708967B}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

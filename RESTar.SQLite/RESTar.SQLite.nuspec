@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+
+<package>
+  <metadata>
+    <id>RESTar.SQLite</id>
+    <version>0.1.1</version>
+    <title>RESTar.SQLite</title>
+    <authors>Erik von Krusenstierna</authors>
+    <owners>Mopedo AB</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <summary>
+      An SQLite resource provider for the RESTar REST API library. To use, include an instance of SQLiteProvider in the
+      call to RESTarConfig.Init(). Create SQLite resources by decorating classes with the SQLiteAttribute, and bind their
+      properties to SQLite columns by decorating them with the ColumnAttribute.
+    </summary>
+    <description>An SQLite resource provider for the RESTar REST API library</description>
+    <releaseNotes>Minor fixes</releaseNotes>
+    <copyright>Copyright 2017 Mopedo AB. All rights reserved.</copyright>
+    <tags>mopedo starcounter REST RESTful web services dynamit sqlite RESTar</tags>
+    <licenseUrl>https://goo.gl/eJS8o9</licenseUrl>
+    <projectUrl>https://goo.gl/TIkN7m</projectUrl>
+    <iconUrl>https://storage.googleapis.com/mopedo-resources/RESTar_logo.png</iconUrl>
+    <dependencies>
+      <dependency id="RESTar" version="0.2.22" />
+    </dependencies>
+  </metadata>
+</package>
