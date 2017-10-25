@@ -71,7 +71,7 @@
       <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="RESTar, Version=0.2.22.0, Culture=neutral, processorArchitecture=AMD64">
-      <HintPath>..\packages\RESTar.0.2.23\lib\net45\RESTar.dll</HintPath>
+      <HintPath>..\packages\RESTar.0.2.24\lib\net45\RESTar.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
