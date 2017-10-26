@@ -30,6 +30,12 @@ namespace RESTar.SQLite
         /// </summary>
         [IgnoreDataMember] public string DatabaseConnectionString { get; internal set; }
 
+        /// <summary>
+        /// The SQLite database connection string to use for manual access to the SQLite
+        /// database
+        /// </summary>
+        public static string ConnectionString => Instance.DatabaseConnectionString;
+
         private const string SQL = "SELECT t FROM RESTar.SQLite.Settings t";
         internal static IEnumerable<Settings> All => Db.SQL<Settings>(SQL);
         internal static Settings Instance => Db.SQL<Settings>(SQL).First;

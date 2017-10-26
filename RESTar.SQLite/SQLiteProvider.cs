@@ -85,6 +85,14 @@ namespace RESTar.SQLite
         /// <inheritdoc />
         public override void ReceiveClaimed(ICollection<IResource> claimedResources)
         {
+            typeof(SQLiteTable)
+                .GetConcreteSubclasses()
+                .Where(type => !type.HasAttribute<RESTarAttribute>(out var _))
+                .ForEach(type => throw new SQLiteException(
+                    $"Found an invalid SQLiteTable resource declaration for type '{type.FullName}'. " +
+                    "SQLiteTable subclasses must be declared as RESTar resources")
+                );
+            claimedResources.ForEach(Cache.Add);
             SQLiteDb.SetupTables(claimedResources);
         }
 

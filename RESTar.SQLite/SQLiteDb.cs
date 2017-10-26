@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Linq;
 using System.Collections.Generic;
-using System.Data;
 using System.Data.SQLite;
+using System.Linq;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 using RESTar.Linq;
@@ -11,7 +10,7 @@ namespace RESTar.SQLite
 {
     internal static class SQLiteDb
     {
-        #region Operations
+        #region Internals
 
         private static void CreateTableIfNotExists(IResource resource) => Query
         (
@@ -28,8 +27,7 @@ namespace RESTar.SQLite
 
         private static void UpdateTableSchema(IResource resource)
         {
-            var uncheckedColumns = resource.GetColumns();
-
+            var uncheckedColumns = new Dictionary<string, StaticProperty>(resource.GetColumns());
             Query($"PRAGMA table_info({resource.GetSQLiteTableName()})", row =>
             {
                 var columnName = row.GetString(1);
@@ -65,7 +63,7 @@ namespace RESTar.SQLite
 
         private static void Query(string sql, Action<SQLiteCommand> action)
         {
-            using (var connection = new SQLiteConnection(Settings.Instance.DatabaseConnectionString))
+            using (var connection = new SQLiteConnection(Settings.ConnectionString))
             {
                 connection.Open();
                 action(new SQLiteCommand(sql, connection));
@@ -74,35 +72,12 @@ namespace RESTar.SQLite
 
         internal static void Query(string sql, Action<SQLiteDataReader> rowAction)
         {
-            using (var connection = new SQLiteConnection(Settings.Instance.DatabaseConnectionString))
+            using (var connection = new SQLiteConnection(Settings.ConnectionString))
             {
                 connection.Open();
                 using (var reader = new SQLiteCommand(sql, connection).ExecuteReader())
                     while (reader.Read()) rowAction(reader);
             }
-        }
-
-        internal static IEnumerable<T> Query<T>(string sql, IDictionary<string, StaticProperty> columns) where T : SQLiteTable
-        {
-            using (var connection = new SQLiteConnection(Settings.Instance.DatabaseConnectionString))
-            {
-                connection.Open();
-                using (var reader = new SQLiteCommand(sql, connection).ExecuteReader())
-                    while (reader.Read()) yield return MakeEntity<T>(reader, columns);
-            }
-        }
-
-        private static T MakeEntity<T>(IDataRecord reader, IDictionary<string, StaticProperty> columns) where T : SQLiteTable
-        {
-            var entity = Activator.CreateInstance<T>();
-            entity.RowId = reader.GetInt64(0);
-            foreach (var column in columns)
-            {
-                var value = reader[column.Key];
-                if (!(value is DBNull))
-                    column.Value.SetValue(entity, value);
-            }
-            return entity;
         }
     }
 }

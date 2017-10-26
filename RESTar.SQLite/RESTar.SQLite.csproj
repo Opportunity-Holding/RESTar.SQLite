@@ -94,8 +94,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Cache.cs" />
     <Compile Include="ColumnAttribute.cs" />
     <Compile Include="ExtensionMethods.cs" />
+    <Compile Include="SQLite.cs" />
     <Compile Include="SQLiteTable.cs" />
     <Compile Include="SQLiteDb.cs" />
     <Compile Include="SQLiteAttribute.cs" />

@@ -3,22 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using RESTar.Deflection.Dynamic;
-using RESTar.Internal;
 using static RESTar.Operators;
 
 namespace RESTar.SQLite
 {
     internal static class ExtensionMethods
     {
-        internal static Dictionary<string, StaticProperty> GetColumns(this IResource resource) => resource
-            .GetStaticProperties()
-            .Where(p => p.Value.HasAttribute<ColumnAttribute>())
-            .ToDictionary(p => p.Key, p => p.Value);
-
         internal static string GetColumnDef(this StaticProperty column) =>
             $"{column.Name.ToLower().Fnuttify()} {column.Type.ToSQLType()}";
-
-        internal static string GetSQLiteTableName(this IResource resource) => resource.Type.FullName?.Replace('.', '$');
 
         internal static string GetResourceName(this string tableName) => Resource.ByTypeName(tableName.Replace('$', '.')).Name;
 
@@ -113,11 +105,28 @@ namespace RESTar.SQLite
             return string.Join(",", columns.Select(c => MakeSQLValueLiteral((object) c.GetValue(entity))));
         }
 
+        internal static bool HasAttribute<TAttribute>(this Type type, out TAttribute attribute)
+            where TAttribute : Attribute
+        {
+            attribute = type?.GetCustomAttributes<TAttribute>().FirstOrDefault();
+            return attribute != null;
+        }
+
         internal static bool HasAttribute<TAttribute>(this MemberInfo type, out TAttribute attribute)
             where TAttribute : Attribute
         {
             attribute = type?.GetCustomAttributes<TAttribute>().FirstOrDefault();
             return attribute != null;
         }
+
+        internal static IList<Type> GetConcreteSubclasses(this Type baseType) => baseType.GetSubclasses()
+            .Where(type => !type.IsAbstract)
+            .ToList();
+
+        internal static IEnumerable<Type> GetSubclasses(this Type baseType) =>
+            from assembly in AppDomain.CurrentDomain.GetAssemblies()
+            from type in assembly.GetTypes()
+            where type.IsSubclassOf(baseType)
+            select type;
     }
 }
