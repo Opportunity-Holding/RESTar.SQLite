@@ -32,11 +32,17 @@ namespace RESTar.SQLite
             var columnProperties = type.GetProperties()
                 .Where(p => p.GetCustomAttribute<ColumnAttribute>() != null)
                 .ToList();
+            if (!columnProperties.Any())
+            {
+                reason = $"SQLite resource types must contain at least one public instance property declared " +
+                         $"as column using the ColumnAttribute";
+                return false;
+            }
 
             if (!typeof(SQLiteTable).IsAssignableFrom(type))
             {
-                reason = $"Resource type '{type.FullName}' does not subclass the '{typeof(SQLiteTable).FullName}' " +
-                         "abstract class needed for all SQLite resource types.";
+                reason = $"'{type.FullName}' does not subclass the '{typeof(SQLiteTable).FullName}' abstract " +
+                         "class needed for all SQLite resource types.";
                 return false;
             }
 
@@ -46,6 +52,13 @@ namespace RESTar.SQLite
 
             foreach (var column in columnProperties)
             {
+                if (column.Name.ToLower() == "rowid")
+                {
+                    reason = "SQLite resources cannot contain column properties called 'RowId' or any case " +
+                             "variants of it";
+                    return false;
+                }
+
                 if (!column.PropertyType.IsSQLiteCompatibleValueType(type, out var error))
                 {
                     reason = error;
@@ -87,11 +100,11 @@ namespace RESTar.SQLite
         {
             typeof(SQLiteTable)
                 .GetConcreteSubclasses()
-                .Where(type => !type.HasAttribute<RESTarAttribute>(out var _))
-                .ForEach(type => throw new SQLiteException(
-                    $"Found an invalid SQLiteTable resource declaration for type '{type.FullName}'. " +
-                    "SQLiteTable subclasses must be declared as RESTar resources")
-                );
+                .Except(claimedResources.Select(r => r.Type))
+                .ForEach(r => throw new SQLiteException(
+                    $"Found an invalid SQLiteTable resource declaration for type '{r.FullName}'. " +
+                    "RESTar.SQLite.SQLiteTable subclasses must be declared as RESTar resources or " +
+                    "wrapped by a ResourceWrapper"));
             claimedResources.ForEach(Cache.Add);
             SQLiteDb.SetupTables(claimedResources);
         }
