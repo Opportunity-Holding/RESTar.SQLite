@@ -3,7 +3,7 @@
 <package>
   <metadata>
     <id>RESTar.SQLite</id>
-    <version>0.1.3</version>
+    <version>0.1.4</version>
     <title>RESTar.SQLite</title>
     <authors>Erik von Krusenstierna</authors>
     <owners>Mopedo AB</owners>
@@ -14,7 +14,7 @@
       properties to SQLite columns by decorating them with the ColumnAttribute.
     </summary>
     <description>An SQLite resource provider for the RESTar REST API library</description>
-    <releaseNotes>Minor fixes</releaseNotes>
+    <releaseNotes></releaseNotes>
     <copyright>Copyright 2017 Mopedo AB. All rights reserved.</copyright>
     <tags>mopedo starcounter REST RESTful web services dynamit sqlite RESTar</tags>
     <licenseUrl>https://goo.gl/eJS8o9</licenseUrl>

@@ -11,7 +11,6 @@ using RESTar.Resources;
 using Starcounter;
 using static RESTar.Methods;
 using IResource = RESTar.Internal.IResource;
-using Profiler = RESTar.Operations.Profiler;
 
 namespace RESTar.SQLite
 {
@@ -128,6 +127,6 @@ namespace RESTar.SQLite
         public override Counter<T> GetDefaultCounter<T>() => SQLiteOperations<T>.Count;
 
         /// <inheritdoc />
-        public override Profiler GetProfiler<T>() => null;
+        public override Profiler<T> GetProfiler<T>() => null;
     }
 }
