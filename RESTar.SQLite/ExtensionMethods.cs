@@ -14,7 +14,7 @@ namespace RESTar.SQLite
 
         internal static string GetResourceName(this string tableName) => Resource.ByTypeName(tableName.Replace('$', '.')).Name;
 
-        internal static string Fnuttify(this string sqlKey) => $"\"{sqlKey.Replace(".", "\".\"")}\"";
+        internal static string Fnuttify(this string sqlKey) => $"\"{sqlKey}\"";
 
         internal static bool IsSQLiteCompatibleValueType(this Type type, Type resourceType, out string error)
         {
@@ -100,10 +100,11 @@ namespace RESTar.SQLite
             return string.IsNullOrWhiteSpace(values) ? null : "WHERE " + values;
         }
 
-        internal static string ToSQLiteInsertInto<T>(this T entity, IEnumerable<StaticProperty> columns) where T : class
-        {
-            return string.Join(",", columns.Select(c => MakeSQLValueLiteral((object) c.GetValue(entity))));
-        }
+        internal static string ToSQLiteInsertValues<T>(this T entity) where T : SQLiteTable => string.Join(",",
+            typeof(T).GetColumns().Values.Select(c => MakeSQLValueLiteral((object) c.GetValue(entity))));
+
+        internal static string ToSQLiteUpdateSet<T>(this T entity) where T : SQLiteTable => string.Join(",",
+            typeof(T).GetColumns().Values.Select(c => $"{c.Name}={MakeSQLValueLiteral((object) c.GetValue(entity))}"));
 
         internal static bool HasAttribute<TAttribute>(this Type type, out TAttribute attribute)
             where TAttribute : Attribute

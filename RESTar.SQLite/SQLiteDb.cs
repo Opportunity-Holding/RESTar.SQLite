@@ -79,5 +79,28 @@ namespace RESTar.SQLite
                     while (reader.Read()) rowAction(reader);
             }
         }
+
+        internal static void Transact(Action<SQLiteCommand> commandAction)
+        {
+            using (var connection = new SQLiteConnection(Settings.ConnectionString))
+            {
+                connection.Open();
+                using (var command = new SQLiteCommand(connection))
+                {
+                    using (var transaction = connection.BeginTransaction())
+                    {
+                        try
+                        {
+                            commandAction(command);
+                            transaction.Commit();
+                        }
+                        catch
+                        {
+                            transaction.Rollback();
+                        }
+                    }
+                }
+            }
+        }
     }
 }

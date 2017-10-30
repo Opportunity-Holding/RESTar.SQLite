@@ -131,3 +131,5 @@ UpgradeLog*.XML
 
 ## Emacs backup/tilde file
 *~
+/SQLite.Interop.dll
+/._SQLite.Interop.dll

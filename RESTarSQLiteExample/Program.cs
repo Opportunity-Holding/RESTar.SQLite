@@ -22,7 +22,7 @@ namespace RESTarSQLiteExample
             requireApiKey: true,
             allowAllOrigins: false,
             viewEnabled: true,
-            configFilePath: @"C:\Mopedo\mopedo3\Mopedo.config",
+            configFilePath: @"C:\Mopedo\mopedo\Mopedo.config",
             lineEndings: LineEndings.Linux,
             resourceProviders: new[] {new SQLiteProvider(@"C:\RESTarTEst", "RESTarTest")}
         );
