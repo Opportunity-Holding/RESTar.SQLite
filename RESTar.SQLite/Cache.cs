@@ -25,7 +25,7 @@ namespace RESTar.SQLite
         internal static void Add(IResource resource)
         {
             TableNames[resource.Type] = resource.Type.FullName?.Replace('.', '$');
-            Columns[resource.Type] = resource
+            Columns[resource.Type] = resource.Type
                 .GetStaticProperties()
                 .Where(p => p.Value.HasAttribute<ColumnAttribute>())
                 .ToDictionary(p => p.Key, p => p.Value);
