@@ -56,7 +56,7 @@ namespace RESTar.SQLite
                 case TypeCode.Decimal: return "DECIMAL";
                 case TypeCode.Byte: return "TINYINT";
                 case TypeCode.String: return "TEXT";
-                case TypeCode.Boolean: return "BOOL";
+                case TypeCode.Boolean: return "BOOLEAN";
                 case TypeCode.DateTime: return "DATETIME";
                 case var _ when type.IsNullable(out var t): return t.ToSQLType();
                 default: return null;
@@ -68,10 +68,12 @@ namespace RESTar.SQLite
             switch (o)
             {
                 case null: return "NULL";
-                case DateTime _: return $"\'{o:O}\'";
+                case true: return "1";
+                case false: return "0";
+
                 case char _:
-                case bool _:
                 case string _: return $"\'{o}\'";
+                case DateTime _: return $"\'{o:O}\'";
                 default: return $"{o}";
             }
         }
