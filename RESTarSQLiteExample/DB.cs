@@ -22,10 +22,8 @@ namespace RESTarSQLiteExample
 
         private static string Fnuttify(this string sqlKey) => $"\"{sqlKey.Replace(".", "\".\"")}\"";
 
-        public static bool Exists<T>() where T : class
-        {
-            return Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t").First != null;
-        }
+        public static bool Exists<T>() where T : class =>
+            Db.SQL<T>($"SELECT t FROM {typeof(T).FullName} t").FirstOrDefault() != null;
 
         #endregion
     }

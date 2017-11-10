@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.Serialization;
 using Starcounter;
 
@@ -38,6 +39,6 @@ namespace RESTar.SQLite
 
         private const string SQL = "SELECT t FROM RESTar.SQLite.Settings t";
         internal static IEnumerable<Settings> All => Db.SQL<Settings>(SQL);
-        internal static Settings Instance => Db.SQL<Settings>(SQL).First;
+        internal static Settings Instance => Db.SQL<Settings>(SQL).FirstOrDefault();
     }
 }
