@@ -58,8 +58,8 @@
     <Reference Include="DocumentFormat.OpenXml, Version=2.5.5631.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\DocumentFormat.OpenXml.2.5\lib\DocumentFormat.OpenXml.dll</HintPath>
     </Reference>
-    <Reference Include="Dynamit, Version=0.1.19.0, Culture=neutral, processorArchitecture=AMD64">
-      <HintPath>..\packages\Dynamit.0.1.22\lib\net45\Dynamit.dll</HintPath>
+    <Reference Include="Dynamit, Version=0.1.23.0, Culture=neutral, processorArchitecture=AMD64">
+      <HintPath>..\packages\Dynamit.0.1.23\lib\net45\Dynamit.dll</HintPath>
     </Reference>
     <Reference Include="ExcelDataReader, Version=3.2.0.0, Culture=neutral, PublicKeyToken=93517dbe6a4012fa, processorArchitecture=MSIL">
       <HintPath>..\packages\ExcelDataReader.3.2.0\lib\net45\ExcelDataReader.dll</HintPath>
@@ -70,8 +70,8 @@
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="RESTar, Version=0.2.37.0, Culture=neutral, processorArchitecture=AMD64">
-      <HintPath>..\packages\RESTar.0.2.37\lib\net45\RESTar.dll</HintPath>
+    <Reference Include="RESTar, Version=0.2.39.0, Culture=neutral, processorArchitecture=AMD64">
+      <HintPath>..\packages\RESTar.0.2.39\lib\net45\RESTar.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
