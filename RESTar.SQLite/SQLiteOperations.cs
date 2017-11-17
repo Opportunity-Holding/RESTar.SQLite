@@ -31,6 +31,8 @@ namespace RESTar.SQLite
             Delete = (e, r) => SQLite<T>.Delete(e);
             Count = request =>
             {
+                if (request.MetaConditions.Distinct != null)
+                    return request.MetaConditions.Distinct.Apply(Select(request))?.LongCount() ?? 0L;
                 var (dbConditions, postConditions) = request.Conditions.Split(c =>
                     c.Term.Count == 1 &&
                     c.Term.First is StaticProperty stat &&
