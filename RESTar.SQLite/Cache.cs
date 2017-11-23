@@ -8,8 +8,8 @@ namespace RESTar.SQLite
 {
     internal static class Cache
     {
-        internal static readonly Dictionary<Type, Dictionary<string, StaticProperty>> Columns;
-        internal static readonly Dictionary<Type, string> TableNames;
+        private static readonly Dictionary<Type, Dictionary<string, StaticProperty>> Columns;
+        private static readonly Dictionary<Type, string> TableNames;
 
         static Cache()
         {

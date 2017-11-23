@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using Dynamit;
 using Newtonsoft.Json.Linq;
-using RESTar.SQLite;
-using Starcounter;
 using RESTar;
 using RESTar.Resources;
+using RESTar.SQLite;
+using Starcounter;
 
 // ReSharper disable UnassignedGetOnlyAutoProperty
 // ReSharper disable UnusedMember.Global
@@ -15,18 +15,63 @@ using RESTar.Resources;
 
 namespace RESTarSQLiteExample
 {
-    public static class Program
+    public class Program
     {
-        public static void Main() => RESTarConfig.Init
-        (
-            requireApiKey: true,
-            allowAllOrigins: false,
-            viewEnabled: true,
-            configFilePath: @"C:\Mopedo\mopedo\Mopedo.config",
-            lineEndings: LineEndings.Linux,
-            resourceProviders: new[] {new SQLiteProvider(@"C:\RESTarTEst", "RESTarTest")}
-        );
+        public static void Main()
+        {
+            var sqliteProvider = new SQLiteProvider
+            (
+                databaseDirectory: @"C:\MyDb",
+                databaseName: "MyDatabaseName"
+            );
+            RESTarConfig.Init
+            (
+                port: 8010,
+                requireApiKey: true,
+                configFilePath: @"C:\MyConfig.config",
+                resourceProviders: new[] {sqliteProvider}
+            );
+
+            new Request<MySQLiteProduct>().POST(() => new[]
+            {
+                new MySQLiteProduct
+                {
+                    ProductId = "OLD_G1239",
+                    InStock = 7,
+                    NetPriceUsd = 249.99M,
+                    RegistrationDate = new DateTime(2003, 01, 12)
+                },
+                new MySQLiteProduct
+                {
+                    ProductId = "F9113",
+                    InStock = 24,
+                    NetPriceUsd = 119,
+                    RegistrationDate = new DateTime(2015, 08, 02)
+                },
+                new MySQLiteProduct
+                {
+                    ProductId = "F3388",
+                    InStock = 500,
+                    NetPriceUsd = 109,
+                    RegistrationDate = new DateTime(2011, 12, 17)
+                }
+            });
+        }
     }
+
+    [SQLite, RESTar]
+    public class MySQLiteProduct : SQLiteTable
+    {
+        [Column] public string ProductId { get; set; }
+        [Column] public int InStock { get; set; }
+        [Column] public decimal NetPriceUsd { get; set; }
+        [Column] public DateTime RegistrationDate { get; set; }
+
+        public bool ImportedFromOldDb => ProductId.StartsWith("OLD_");
+        public bool InShortSupply => InStock < 10;
+        public int DaysSinceRegistration => (DateTime.Now - RegistrationDate).Days;
+    }
+
 
     [SQLite, RESTar]
     public class BidRequestArchive : SQLiteTable
@@ -40,9 +85,7 @@ namespace RESTarSQLiteExample
     }
 
     [RESTar(Methods.GET)]
-    public class MyThing : ResourceWrapper<Table>
-    {
-    }
+    public class MyThing : ResourceWrapper<Table> { }
 
     [SQLite, RESTar]
     public class SQLTable : SQLiteTable
@@ -160,9 +203,7 @@ namespace RESTarSQLiteExample
 
     public class MyElement : DElement
     {
-        public MyElement(DList list, int index, object value = null) : base(list, index, value)
-        {
-        }
+        public MyElement(DList list, int index, object value = null) : base(list, index, value) { }
     }
 
     [RESTar(Methods.GET)]
@@ -174,8 +215,6 @@ namespace RESTarSQLiteExample
 
     public class MyDynamicTableKvp : DKeyValuePair
     {
-        public MyDynamicTableKvp(DDictionary dict, string key, object value = null) : base(dict, key, value)
-        {
-        }
+        public MyDynamicTableKvp(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
 }

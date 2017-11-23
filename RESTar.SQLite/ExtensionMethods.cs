@@ -28,7 +28,7 @@ namespace RESTar.SQLite
             return true;
         }
 
-        internal static bool IsNullable(this Type type, out Type baseType)
+        private static bool IsNullable(this Type type, out Type baseType)
         {
             baseType = null;
             if (!type.IsGenericType || type.GetGenericTypeDefinition() != typeof(Nullable<>))
@@ -40,7 +40,6 @@ namespace RESTar.SQLite
         internal static (string, string) TSplit(this string str, char splitCharacter)
         {
             var split = str.Split(splitCharacter);
-
             return (split[0], split.ElementAtOrDefault(1));
         }
 
@@ -63,7 +62,7 @@ namespace RESTar.SQLite
             }
         }
 
-        internal static string MakeSQLValueLiteral(this object o)
+        private static string MakeSQLValueLiteral(this object o)
         {
             switch (o)
             {

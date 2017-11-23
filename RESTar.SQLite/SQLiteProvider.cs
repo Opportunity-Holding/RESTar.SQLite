@@ -33,8 +33,8 @@ namespace RESTar.SQLite
                 .ToList();
             if (!columnProperties.Any())
             {
-                reason = $"SQLite resource types must contain at least one public instance property declared " +
-                         $"as column using the ColumnAttribute";
+                reason = "SQLite resource types must contain at least one public instance property declared " +
+                         "as column using the ColumnAttribute";
                 return false;
             }
 

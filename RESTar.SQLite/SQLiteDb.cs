@@ -10,8 +10,6 @@ namespace RESTar.SQLite
 {
     internal static class SQLiteDb
     {
-        #region Internals
-
         private static void CreateTableIfNotExists(IResource resource) => Query
         (
             sql: $"CREATE TABLE IF NOT EXISTS {resource.GetSQLiteTableName()} " +
@@ -45,9 +43,7 @@ namespace RESTar.SQLite
             });
             uncheckedColumns.Values.ForEach(column => AddColumn(resource, column));
         }
-
-        #endregion
-
+        
         internal static void SetupTables(IEnumerable<IResource> resources) => resources.ForEach(resource =>
         {
             CreateTableIfNotExists(resource);
