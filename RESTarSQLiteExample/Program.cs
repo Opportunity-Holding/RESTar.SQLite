@@ -12,51 +12,43 @@ using Starcounter;
 // ReSharper disable UnusedMember.Global
 
 #pragma warning disable 1591
-
+    
 namespace RESTarSQLiteExample
 {
     public class Program
     {
         public static void Main()
         {
-            var sqliteProvider = new SQLiteProvider
-            (
-                databaseDirectory: @"C:\MyDb",
-                databaseName: "MyDatabaseName"
-            );
             RESTarConfig.Init
             (
                 port: 8010,
                 requireApiKey: true,
                 configFilePath: @"C:\MyConfig.config",
-                resourceProviders: new[] {sqliteProvider}
-            );
-
-            new Request<MySQLiteProduct>().POST(() => new[]
-            {
-                new MySQLiteProduct
+                resourceProviders: new[]
                 {
-                    ProductId = "OLD_G1239",
-                    InStock = 7,
-                    NetPriceUsd = 249.99M,
-                    RegistrationDate = new DateTime(2003, 01, 12)
-                },
-                new MySQLiteProduct
-                {
-                    ProductId = "F9113",
-                    InStock = 24,
-                    NetPriceUsd = 119,
-                    RegistrationDate = new DateTime(2015, 08, 02)
-                },
-                new MySQLiteProduct
-                {
-                    ProductId = "F3388",
-                    InStock = 500,
-                    NetPriceUsd = 109,
-                    RegistrationDate = new DateTime(2011, 12, 17)
+                    new SQLiteProvider
+                    (
+                        databaseDirectory: @"C:\MyDb",
+                        databaseName: "MyDatabaseName"
+                    )
                 }
-            });
+            );
         }
+    }
+
+    #region Resources
+
+    [Database, RESTar]
+    public class MyProduct
+    {
+        public string ProductId { get; set; }
+        public int InStock { get; set; }
+        public decimal NetPriceUsd { get; set; }
+        public DateTime RegistrationDate { get; set; }
+
+        public bool ImportedFromOldDb => ProductId.StartsWith("OLD_");
+        public bool InShortSupply => InStock < 10;
+        public int DaysSinceRegistration => (DateTime.Now - RegistrationDate).Days;
     }
 
     [SQLite, RESTar]
@@ -72,6 +64,9 @@ namespace RESTarSQLiteExample
         public int DaysSinceRegistration => (DateTime.Now - RegistrationDate).Days;
     }
 
+    #endregion
+
+    #region Stuff
 
     [SQLite, RESTar]
     public class BidRequestArchive : SQLiteTable
@@ -217,4 +212,6 @@ namespace RESTarSQLiteExample
     {
         public MyDynamicTableKvp(DDictionary dict, string key, object value = null) : base(dict, key, value) { }
     }
+
+    #endregion
 }
