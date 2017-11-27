@@ -3,7 +3,7 @@
 <package>
   <metadata>
     <id>RESTar.SQLite</id>
-    <version>0.1.22</version>
+    <version>0.1.23</version>
     <title>RESTar.SQLite</title>
     <authors>Erik von Krusenstierna</authors>
     <owners>Mopedo AB</owners>
