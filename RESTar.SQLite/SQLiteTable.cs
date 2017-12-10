@@ -5,6 +5,9 @@
     /// </summary>
     public abstract class SQLiteTable
     {
-        internal long RowId { get; set; }
+        /// <summary>
+        /// The unique SQLite row ID for this row
+        /// </summary>
+        [RESTarMember(hide: true)] public long RowId { get; set; }
     }
 }
