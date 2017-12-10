@@ -77,15 +77,29 @@ namespace RESTar.SQLite
             }
         }
 
+        private static string GetSQLOperator(Operators op)
+        {
+            switch (op)
+            {
+                case EQUALS: return "=";
+                case NOT_EQUALS: return "<>";
+                case LESS_THAN: return "<";
+                case GREATER_THAN: return ">";
+                case LESS_THAN_OR_EQUALS: return "<=";
+                case GREATER_THAN_OR_EQUALS: return ">=";
+                default: throw new ArgumentOutOfRangeException(nameof(op), op, null);
+            }
+        }
+
         internal static string ToSQLiteWhereClause<T>(this IEnumerable<Condition<T>> conditions) where T : class
         {
             var values = string.Join(" AND ", conditions.Where(c => !c.Skip).Select(c =>
             {
-                var op = c.Operator.SQL;
+                var op = GetSQLOperator(c.Operator);
                 var valueLiteral = MakeSQLValueLiteral((object) c.Value);
                 if (valueLiteral == "NULL")
                 {
-                    switch (c.Operator.OpCode)
+                    switch (c.Operator)
                     {
                         case EQUALS:
                             op = "IS";
