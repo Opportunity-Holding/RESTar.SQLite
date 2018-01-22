@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SQLite;
+using RESTar.Deflection;
+using RESTar.Deflection.Dynamic;
 using RESTar.Linq;
 
 namespace RESTar.SQLite
@@ -11,6 +13,8 @@ namespace RESTar.SQLite
     /// <typeparam name="T">The SQLiteTable class to bind SQL operations to</typeparam>
     public static class SQLite<T> where T : SQLiteTable
     {
+        private static Constructor<T> Constructor;
+
         /// <summary>
         /// Selects entities in the SQLite database using the RESTar.SQLite O/RM mapping 
         /// facilities. Returns an IEnumerable of the provided resource type.
@@ -21,6 +25,8 @@ namespace RESTar.SQLite
         public static IEnumerable<T> Select(string where)
         {
             var sql = $"SELECT RowId,* FROM {typeof(T).GetSQLiteTableName().Fnuttify()} {where}";
+            if (Constructor == null)
+                Constructor = typeof(T).MakeStaticConstructor<T>();
             using (var connection = new SQLiteConnection(Settings.ConnectionString))
             {
                 connection.Open();
@@ -28,7 +34,7 @@ namespace RESTar.SQLite
                 {
                     T MakeEntity()
                     {
-                        var entity = Activator.CreateInstance<T>();
+                        var entity = Constructor();
                         entity.RowId = reader.GetInt64(0);
                         typeof(T).GetColumns().ForEach(column =>
                         {
@@ -150,7 +156,8 @@ namespace RESTar.SQLite
             {
                 connection.Open();
                 using (var reader = new SQLiteCommand(sql, connection).ExecuteReader())
-                    while (reader.Read()) count = reader.GetInt64(0);
+                    while (reader.Read())
+                        count = reader.GetInt64(0);
             }
             return count;
         }

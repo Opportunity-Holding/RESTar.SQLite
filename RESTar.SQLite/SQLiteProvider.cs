@@ -5,12 +5,12 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Resources;
 using Starcounter;
 using static RESTar.Methods;
-using IResource = RESTar.Internal.IResource;
 
 namespace RESTar.SQLite
 {
@@ -95,7 +95,7 @@ namespace RESTar.SQLite
         }
 
         /// <inheritdoc />
-        public override void ReceiveClaimed(ICollection<IResource> claimedResources)
+        public override void ReceiveClaimed(ICollection<IEntityResource> claimedResources)
         {
             typeof(SQLiteTable)
                 .GetConcreteSubclasses()

@@ -9,7 +9,7 @@ namespace RESTar.SQLite
 {
     internal static class ExtensionMethods
     {
-        internal static string GetColumnDef(this StaticProperty column) =>
+        internal static string GetColumnDef(this DeclaredProperty column) =>
             $"{column.Name.ToLower().Fnuttify()} {column.Type.ToSQLType()}";
 
         internal static string GetResourceName(this string tableName) => Resource.ByTypeName(tableName.Replace('$', '.')).Name;

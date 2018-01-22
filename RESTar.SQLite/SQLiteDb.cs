@@ -17,7 +17,7 @@ namespace RESTar.SQLite
             action: command => command.ExecuteNonQuery()
         );
 
-        private static void AddColumn(IResource resource, StaticProperty toAdd) => Query
+        private static void AddColumn(IResource resource, DeclaredProperty toAdd) => Query
         (
             sql: $"ALTER TABLE {resource.GetSQLiteTableName()} ADD COLUMN {toAdd.GetColumnDef()}",
             action: command => command.ExecuteNonQuery()
@@ -25,7 +25,7 @@ namespace RESTar.SQLite
 
         private static void UpdateTableSchema(IResource resource)
         {
-            var uncheckedColumns = new Dictionary<string, StaticProperty>(resource.GetColumns());
+            var uncheckedColumns = new Dictionary<string, DeclaredProperty>(resource.GetColumns(), StringComparer.OrdinalIgnoreCase);
             Query($"PRAGMA table_info({resource.GetSQLiteTableName()})", row =>
             {
                 var columnName = row.GetString(1);
@@ -43,7 +43,7 @@ namespace RESTar.SQLite
             });
             uncheckedColumns.Values.ForEach(column => AddColumn(resource, column));
         }
-        
+
         internal static void SetupTables(IEnumerable<IResource> resources) => resources.ForEach(resource =>
         {
             CreateTableIfNotExists(resource);
@@ -72,7 +72,8 @@ namespace RESTar.SQLite
             {
                 connection.Open();
                 using (var reader = new SQLiteCommand(sql, connection).ExecuteReader())
-                    while (reader.Read()) rowAction(reader);
+                    while (reader.Read())
+                        rowAction(reader);
             }
         }
 

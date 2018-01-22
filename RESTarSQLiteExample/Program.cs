@@ -153,9 +153,9 @@ namespace RESTarSQLiteExample
         public string S { get; set; }
         public string[] Ss { get; set; }
 
-        public int Insert(IEnumerable<R> entities, IRequest<R> request)
+        public int Insert(IRequest<R> request)
         {
-            return entities.Count();
+            return request.GetEntities().Count();
         }
 
         public IEnumerable<R> Select(IRequest<R> request)
@@ -163,14 +163,14 @@ namespace RESTarSQLiteExample
             return new[] {new R {S = "Swoo", Ss = new[] {"S", "Sd"}}};
         }
 
-        public int Update(IEnumerable<R> entities, IRequest<R> request)
+        public int Update(IRequest<R> request)
         {
-            return entities.Count();
+            return request.GetEntities().Count();
         }
 
-        public int Delete(IEnumerable<R> entities, IRequest<R> request)
+        public int Delete(IRequest<R> request)
         {
-            return entities.Count();
+            return request.GetEntities().Count();
         }
     }
 

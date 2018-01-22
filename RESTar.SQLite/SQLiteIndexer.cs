@@ -35,11 +35,11 @@ namespace RESTar.SQLite
             }).Where(request.Conditions);
         }
 
-        public int Insert(IEnumerable<DatabaseIndex> indexes, IRequest<DatabaseIndex> request)
+        public int Insert(IRequest<DatabaseIndex> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            foreach (var index in indexes)
+            foreach (var index in request.GetEntities())
             {
                 if (index.IResource == null)
                     throw new Exception("Found no resource to register index on");
@@ -50,11 +50,11 @@ namespace RESTar.SQLite
             return count;
         }
 
-        public int Update(IEnumerable<DatabaseIndex> indexes, IRequest<DatabaseIndex> request)
+        public int Update(IRequest<DatabaseIndex> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var count = 0;
-            foreach (var index in indexes)
+            foreach (var index in request.GetEntities())
             {
                 SQLiteDb.Query($"DROP INDEX {index.Name.Fnuttify()} ON {index.IResource.GetSQLiteTableName().Fnuttify()}");
                 count += SQLiteDb.Query($"CREATE INDEX {index.Name.Fnuttify()} ON " +
@@ -64,11 +64,11 @@ namespace RESTar.SQLite
             return count;
         }
 
-        public int Delete(IEnumerable<DatabaseIndex> indexes, IRequest<DatabaseIndex> request)
+        public int Delete(IRequest<DatabaseIndex> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            return indexes.Sum(index => SQLiteDb.Query($"DROP INDEX {index.Name.Fnuttify()} ON " +
-                                                       $"{index.IResource.GetSQLiteTableName().Fnuttify()}"));
+            return request.GetEntities().Sum(index => SQLiteDb.Query($"DROP INDEX {index.Name.Fnuttify()} ON " +
+                                                                     $"{index.IResource.GetSQLiteTableName().Fnuttify()}"));
         }
     }
 }

@@ -8,6 +8,7 @@
         /// <summary>
         /// The unique SQLite row ID for this row
         /// </summary>
-        [RESTarMember(hide: true)] public long RowId { get; set; }
+        [RESTarMember(key: true, order: int.MaxValue)]
+        public long RowId { get; internal set; }
     }
 }

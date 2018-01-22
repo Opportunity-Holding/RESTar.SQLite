@@ -19,23 +19,23 @@ namespace RESTar.SQLite
             {
                 var (dbConditions, postConditions) = request.Conditions.Split(c =>
                     c.Term.Count == 1 &&
-                    c.Term.First is StaticProperty stat &&
+                    c.Term.First is DeclaredProperty stat &&
                     stat.HasAttribute<ColumnAttribute>()
                 );
                 return SQLite<T>
                     .Select(dbConditions.ToSQLiteWhereClause())
                     .Where(postConditions);
             };
-            Insert = (e, r) => SQLite<T>.Insert(e);
-            Update = (e, r) => SQLite<T>.Update(e);
-            Delete = (e, r) => SQLite<T>.Delete(e);
+            Insert = r => SQLite<T>.Insert(r.GetEntities());
+            Update = r => SQLite<T>.Update(r.GetEntities());
+            Delete = r => SQLite<T>.Delete(r.GetEntities());
             Count = request =>
             {
                 if (request.MetaConditions.Distinct != null)
                     return request.MetaConditions.Distinct.Apply(Select(request))?.LongCount() ?? 0L;
                 var (dbConditions, postConditions) = request.Conditions.Split(c =>
                     c.Term.Count == 1 &&
-                    c.Term.First is StaticProperty stat &&
+                    c.Term.First is DeclaredProperty stat &&
                     stat.HasAttribute<ColumnAttribute>()
                 );
                 return postConditions.Any()
