@@ -25,11 +25,7 @@ namespace RESTar.SQLite
                     Columns = groups["columns"].Captures.Cast<Capture>().Select(column =>
                     {
                         var (name, direction) = column.ToString().TSplit(' ');
-                        return new ColumnInfo
-                        {
-                            Name = name.Replace("\"", ""),
-                            Descending = direction.ToLower().Contains("desc")
-                        };
+                        return new ColumnInfo(name.Replace("\"", ""), direction.ToLower().Contains("desc"));
                     }).ToArray()
                 };
             }).Where(request.Conditions);
