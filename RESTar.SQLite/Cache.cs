@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using RESTar.Deflection.Dynamic;
 using RESTar.Internal;
 
@@ -24,7 +25,10 @@ namespace RESTar.SQLite
 
         internal static void Add(IResource resource)
         {
-            TableNames[resource.Type] = resource.Type.FullName?.Replace('.', '$');
+            var tableName = resource.Type.FullName?.Replace('.', '$');
+            if (resource.Type.GetCustomAttribute<SQLiteAttribute>() is SQLiteAttribute a && a.CustomTableName is string customName)
+                tableName = customName;
+            TableNames[resource.Type] = tableName;
             Columns[resource.Type] = resource.Type
                 .GetDeclaredProperties()
                 .Where(p => p.Value.HasAttribute<ColumnAttribute>())
