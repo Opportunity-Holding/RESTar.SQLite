@@ -33,7 +33,7 @@ namespace RESTar.SQLite
                 if (!uncheckedColumns.TryGetValue(columnName, out var correspondingColumn))
                     return;
                 var foundType = correspondingColumn.Type.ToSQLType();
-                if (foundType != columnType)
+                if (!string.Equals(foundType, columnName, StringComparison.OrdinalIgnoreCase))
                 {
                     throw new SQLiteException($"The underlying database schema for SQLite resource '{resource.Name}' has " +
                                               $"changed. Cannot convert column of SQLite type '{columnType}' to '{foundType}' " +
