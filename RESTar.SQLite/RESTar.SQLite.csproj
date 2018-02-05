@@ -112,6 +112,9 @@
     <None Include="RESTar.SQLite.nuspec">
       <SubType>Designer</SubType>
     </None>
+    <None Include="weaver.ignore">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(StarcounterBin)\Starcounter.MsBuild.targets" />
