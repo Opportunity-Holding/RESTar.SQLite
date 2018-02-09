@@ -16,7 +16,7 @@ Install-Package RESTar.SQLite
 
 ## Using RESTar.SQLite
 
-RESTar.SQLite defines a **resource provider** for RESTar, which should be included in the call to `RESTarConfig.Init()` in applications that wish to use it. Resource providers are essentially add-ons for RESTar, enabling – for example – database technologies like SQLite to work with RESTar just like native database technologies like Starcounter. For more on resource providers, see the [RESTar Specification]().
+RESTar.SQLite defines a **resource provider** for RESTar, which should be included in the call to `RESTarConfig.Init()` in applications that wish to use it. Resource providers are essentially add-ons for RESTar, enabling – for example – database technologies like SQLite to work with RESTar just like native database technologies like Starcounter. For more on resource providers, see the [RESTar Specification](https://github.com/Mopedo/Home/tree/master/Documentation/RESTar).
 
 ### Resource declarations
 
