@@ -2,7 +2,7 @@ _By Erik von Krusenstierna (erik.von.krusenstierna@mopedo.com)_
 
 # What is RESTar.SQLite?
 
-RESTar.SQLite is a free to use open-source resource provider for [RESTar](https://github.com/Mopedo/Home/tree/master/Documentation/RESTar) that integrates the [System.Data.SQLite](https://system.data.sqlite.org/index.html/doc/trunk/www/index.wiki) .NET library with the RESTar framework and enables web resources that use SQLite as the underlying persistent data storage. This means that developers can use SQLite tables as resources for their RESTar applications, just like they can use Starcounter database tables.
+RESTar.SQLite is a free to use open-source resource provider for [RESTar](https://github.com/Mopedo/Home/tree/master/RESTar) that integrates the [System.Data.SQLite](https://system.data.sqlite.org/index.html/doc/trunk/www/index.wiki) .NET library with the RESTar framework and enables web resources that use SQLite as the underlying persistent data storage. This means that developers can use SQLite tables as resources for their RESTar applications, just like they can use Starcounter database tables.
 
 This documentation will cover the basics of RESTar.SQLite and how to set it up in a Visual Studio project.
 
@@ -16,7 +16,7 @@ Install-Package RESTar.SQLite
 
 ## Using RESTar.SQLite
 
-RESTar.SQLite defines a **resource provider** for RESTar, which should be included in the call to `RESTarConfig.Init()` in applications that wish to use it. Resource providers are essentially add-ons for RESTar, enabling – for example – database technologies like SQLite to work with RESTar just like native database technologies like Starcounter. For more on resource providers, see the [RESTar Specification](https://github.com/Mopedo/Home/tree/master/Documentation/RESTar).
+RESTar.SQLite defines a **resource provider** for RESTar, which should be included in the call to `RESTarConfig.Init()` in applications that wish to use it. Resource providers are essentially add-ons for RESTar, enabling – for example – database technologies like SQLite to work with RESTar just like native database technologies like Starcounter. For more on resource providers, see the [RESTar Specification](https://github.com/Mopedo/Home/tree/master/RESTar).
 
 ### Resource declarations
 
