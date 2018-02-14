@@ -1,4 +1,6 @@
-﻿namespace RESTar.SQLite
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace RESTar.SQLite
 {
     /// <summary>
     /// The base class for all SQLite table resource types
@@ -8,7 +10,6 @@
         /// <summary>
         /// The unique SQLite row ID for this row
         /// </summary>
-        [RESTarMember(key: true, order: int.MaxValue)]
-        public long RowId { get; internal set; }
+        [RESTarMember(order: int.MaxValue), Key] public long RowId { get; internal set; }
     }
 }
