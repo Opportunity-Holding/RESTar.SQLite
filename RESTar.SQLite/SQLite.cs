@@ -22,7 +22,7 @@ namespace RESTar.SQLite
         /// <param name="where">The WHERE clause of the SQL query to execute. Will be preceded 
         /// by "SELECT * FROM {type} " in the actual query</param>
         /// <returns></returns>
-        public static IEnumerable<T> Select(string where)
+        public static IEnumerable<T> Select(string where = null)
         {
             var sql = $"SELECT RowId,* FROM {typeof(T).GetSQLiteTableName().Fnuttify()} {where}";
             if (Constructor == null)
@@ -148,7 +148,7 @@ namespace RESTar.SQLite
         /// <param name="where">The WHERE clause of the SQL query to execute. Will be preceded 
         /// by "SELECT COUNT(*) FROM {type} " in the actual query</param>
         /// <returns></returns>
-        public static long Count(string where)
+        public static long Count(string where = null)
         {
             var sql = $"SELECT COUNT(*) FROM {typeof(T).GetSQLiteTableName().Fnuttify()} {where}";
             var count = 0L;

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Data.SQLite;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using RESTar.Internal;
 using RESTar.Linq;
@@ -26,10 +25,10 @@ namespace RESTar.SQLite
     public class SQLiteProvider : ResourceProvider<SQLiteTable>
     {
         /// <inheritdoc />
-        public override bool IsValid(Type type, out string reason)
+        public override bool IsValid(IEntityResource resource, out string reason)
         {
-            var columnProperties = type.GetProperties()
-                .Where(p => p.GetCustomAttribute<ColumnAttribute>() != null)
+            var columnProperties = resource.Members.Values
+                .Where(p => p.HasAttribute<ColumnAttribute>())
                 .ToList();
             if (!columnProperties.Any())
             {
@@ -38,16 +37,15 @@ namespace RESTar.SQLite
                 return false;
             }
 
-            if (!typeof(SQLiteTable).IsAssignableFrom(type))
+            if (!typeof(SQLiteTable).IsAssignableFrom(resource.Type))
             {
-                reason = $"'{type.FullName}' does not subclass the '{typeof(SQLiteTable).FullName}' abstract " +
+                reason = $"'{resource.Type.FullName}' does not subclass the '{typeof(SQLiteTable).FullName}' abstract " +
                          "class needed for all SQLite resource types.";
                 return false;
             }
 
-            var attribute = type.GetCustomAttribute<RESTarAttribute>();
-            if (attribute.AvailableMethods.Contains(POST) && type.GetConstructor(Type.EmptyTypes) == null)
-                reason = $"Expected parameterless constructor for type '{type.FullName}' to support POST";
+            if (resource.AvailableMethods.Contains(POST) && resource.Type.GetConstructor(Type.EmptyTypes) == null)
+                reason = $"Expected parameterless constructor for type '{resource.Type.FullName}' to support POST";
 
             foreach (var column in columnProperties)
             {
@@ -58,7 +56,7 @@ namespace RESTar.SQLite
                     return false;
                 }
 
-                if (!column.PropertyType.IsSQLiteCompatibleValueType(type, out var error))
+                if (!column.Type.IsSQLiteCompatibleValueType(resource.Type, out var error))
                 {
                     reason = error;
                     return false;
