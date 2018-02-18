@@ -49,7 +49,7 @@ namespace RESTarTutorial
         {
             var superHeroesOrdered = SQLite<Superhero>
                 .Select()
-                .OrderByDescending(r => r.RowId)
+                .OrderBy(r => r.RowId)
                 .ToList();
             return new[]
             {
