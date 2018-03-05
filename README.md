@@ -125,3 +125,19 @@ RESTar.SQLite is integrated with the RESTar `DatabaseIndex` resource, and can cr
 ```
 
 If the `Table` property refers to a SQLite resource, the index will be registered on the SQLite database table.
+
+## weaver.ignore
+
+Add the following rows to the project's `weaver.ignore` file when using RESTar.SQLite (the first 6 are required by RESTar).
+
+```
+Newtonsoft.Json
+DocumentFormat.OpenXML
+ClosedXml
+Excel
+System.ValueTuple
+FastMember.Signed
+
+System.Data.SQLite
+SQLite.Interop
+```
