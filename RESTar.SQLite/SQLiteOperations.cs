@@ -17,30 +17,31 @@ namespace RESTar.SQLite
         {
             Select = request =>
             {
-                var (dbConditions, postConditions) = request.Conditions.Split(c =>
+                var (sql, post) = request.Conditions.Split(c =>
                     c.Term.Count == 1 &&
                     c.Term.First is DeclaredProperty stat &&
                     stat.HasAttribute<ColumnAttribute>()
                 );
                 return SQLite<T>
-                    .Select(dbConditions.ToSQLiteWhereClause())
-                    .Where(postConditions);
+                    .Select(sql.ToSQLiteWhereClause())
+                    .Where(post);
             };
             Insert = r => SQLite<T>.Insert(r.GetEntities());
             Update = r => SQLite<T>.Update(r.GetEntities());
             Delete = r => SQLite<T>.Delete(r.GetEntities());
             Count = request =>
             {
-                if (request.MetaConditions.Distinct != null)
-                    return request.MetaConditions.Distinct.Apply(Select(request))?.LongCount() ?? 0L;
-                var (dbConditions, postConditions) = request.Conditions.Split(c =>
+                var (sql, post) = request.Conditions.Split(c =>
                     c.Term.Count == 1 &&
                     c.Term.First is DeclaredProperty stat &&
                     stat.HasAttribute<ColumnAttribute>()
                 );
-                return postConditions.Any()
-                    ? Select(request).Count()
-                    : SQLite<T>.Count(dbConditions.ToSQLiteWhereClause());
+                return post.Any()
+                    ? SQLite<T>
+                        .Select(sql.ToSQLiteWhereClause())
+                        .Where(post)
+                        .Count()
+                    : SQLite<T>.Count(sql.ToSQLiteWhereClause());
             };
         }
     }
