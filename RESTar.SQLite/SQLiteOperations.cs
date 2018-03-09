@@ -20,8 +20,7 @@ namespace RESTar.SQLite
                 var (sql, post) = request.Conditions.Split(c =>
                     c.Term.Count == 1 &&
                     c.Term.First is DeclaredProperty stat &&
-                    stat.HasAttribute<ColumnAttribute>()
-                );
+                    stat.HasAttribute<ColumnAttribute>());
                 return SQLite<T>
                     .Select(sql.ToSQLiteWhereClause())
                     .Where(post);
@@ -34,8 +33,7 @@ namespace RESTar.SQLite
                 var (sql, post) = request.Conditions.Split(c =>
                     c.Term.Count == 1 &&
                     c.Term.First is DeclaredProperty stat &&
-                    stat.HasAttribute<ColumnAttribute>()
-                );
+                    stat.HasAttribute<ColumnAttribute>());
                 return post.Any()
                     ? SQLite<T>
                         .Select(sql.ToSQLiteWhereClause())
