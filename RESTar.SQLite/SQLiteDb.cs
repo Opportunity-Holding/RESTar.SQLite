@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SQLite;
 using System.Linq;
 using RESTar.Deflection.Dynamic;
@@ -62,7 +63,7 @@ namespace RESTar.SQLite
             using (var connection = new SQLiteConnection(Settings.ConnectionString))
             {
                 connection.Open();
-                action(new SQLiteCommand(sql, connection));
+                action(new SQLiteCommand(sql, connection){CommandType = CommandType.Text});
             }
         }
 
@@ -71,7 +72,8 @@ namespace RESTar.SQLite
             using (var connection = new SQLiteConnection(Settings.ConnectionString))
             {
                 connection.Open();
-                using (var reader = new SQLiteCommand(sql, connection).ExecuteReader())
+                var command = new SQLiteCommand(sql, connection) {CommandType = CommandType.Text};
+                using (var reader = command.ExecuteReader())
                     while (reader.Read())
                         rowAction(reader);
             }
@@ -82,7 +84,7 @@ namespace RESTar.SQLite
             using (var connection = new SQLiteConnection(Settings.ConnectionString))
             {
                 connection.Open();
-                using (var command = new SQLiteCommand(connection))
+                using (var command = new SQLiteCommand(connection) {CommandType = CommandType.Text})
                 {
                     using (var transaction = connection.BeginTransaction())
                     {

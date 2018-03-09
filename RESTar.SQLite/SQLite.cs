@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Data;
 using System.Data.SQLite;
 using System.Linq;
 using RESTar.Linq;
@@ -127,16 +128,13 @@ namespace RESTar.SQLite
         /// <returns></returns>
         public static long Count(string where = null)
         {
-            var sql = $"SELECT COUNT(*) FROM {typeof(T).GetSQLiteTableName().Fnuttify()} {where}";
-            var count = 0L;
+            var sql = $"SELECT COUNT(RowId) FROM {typeof(T).GetSQLiteTableName().Fnuttify()} {where}";
             using (var connection = new SQLiteConnection(Settings.ConnectionString))
             {
                 connection.Open();
-                using (var reader = new SQLiteCommand(sql, connection).ExecuteReader())
-                    while (reader.Read())
-                        count = reader.GetInt64(0);
+                var command = new SQLiteCommand(sql, connection) {CommandType = CommandType.Text};
+                return (long) command.ExecuteScalar();
             }
-            return count;
         }
     }
 }
