@@ -1,6 +1,5 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using System.Data.SQLite;
 
 namespace RESTar.SQLite
 {
@@ -8,7 +7,7 @@ namespace RESTar.SQLite
     {
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         private SQLiteEnumerator<T> Enumerator { get; }
-        internal SQLiteIterator(SQLiteDataReader reader, SQLiteConnection connection) => Enumerator = new SQLiteEnumerator<T>(reader, connection);
+        internal SQLiteIterator(string sql) => Enumerator = new SQLiteEnumerator<T>(sql);
         public IEnumerator<T> GetEnumerator() => Enumerator;
     }
 }

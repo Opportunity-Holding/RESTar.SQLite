@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using RESTar.SQLite;
 using static RESTar.Methods;
@@ -33,6 +34,25 @@ namespace RESTarTutorial
             // The 'resourceProviders' parameter is used for SQLite integration
         }
     }
+
+    [RESTar, Database]
+    public class ScResource
+    {
+        public string STR { get; set; }
+        public int INT { get; set; }
+        public DateTime DATETIME { get; set; }
+        public decimal DECIMAL { get; set; }
+    }
+
+    [RESTar, SQLite]
+    public class SQLiteResource : SQLiteTable
+    {
+        [Column] public string STR { get; set; }
+        [Column] public int INT { get; set; }
+        [Column] public DateTime DATETIME { get; set; }
+        [Column] public decimal DECIMAL { get; set; }
+    }
+
 
     [RESTar(GET)]
     public class SuperheroReport : ISelector<SuperheroReport>

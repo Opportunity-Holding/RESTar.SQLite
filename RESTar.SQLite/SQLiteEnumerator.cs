@@ -11,8 +11,9 @@ namespace RESTar.SQLite
     {
         private static readonly Constructor<T> Constructor = typeof(T).MakeStaticConstructor<T>();
         private Dictionary<string, DeclaredProperty> Columns { get; }
-        private SQLiteDataReader Reader { get; }
+        private SQLiteDataReader Reader { get; set; }
         private SQLiteConnection Connection { get; }
+        private string SQL { get; }
 
         public void Dispose()
         {
@@ -21,17 +22,23 @@ namespace RESTar.SQLite
         }
 
         public bool MoveNext() => Reader.Read();
-        public void Reset() { }
-        object IEnumerator.Current => Current;
 
-        internal SQLiteEnumerator(SQLiteDataReader reader, SQLiteConnection connection)
+        public void Reset()
         {
-            Reader = reader;
-            Connection = connection;
-            Columns = typeof(T).GetColumns();
+            Reader.Dispose();
+            Init();
         }
 
-        private T currentCache;
+        private void Init() => Reader = new SQLiteCommand(SQL, Connection).ExecuteReader();
+
+        internal SQLiteEnumerator(string sql)
+        {
+            Columns = typeof(T).GetColumns();
+            Connection = new SQLiteConnection(Settings.ConnectionString);
+            Connection.Open();
+            SQL = sql;
+            Init();
+        }
 
         private T MakeEntity()
         {
@@ -46,6 +53,7 @@ namespace RESTar.SQLite
             return entity;
         }
 
-        public T Current => currentCache ?? (currentCache = MakeEntity());
+        object IEnumerator.Current => Current;
+        public T Current => MakeEntity();
     }
 }
