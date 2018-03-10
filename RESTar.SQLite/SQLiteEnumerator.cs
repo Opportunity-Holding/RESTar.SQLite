@@ -47,8 +47,8 @@ namespace RESTar.SQLite
             foreach (var column in Columns)
             {
                 var value = Reader[column.Key];
-                if (value is DBNull) break;
-                column.Value.SetValue(entity, value);
+                if (!(value is DBNull))
+                    column.Value.SetValue(entity, value);
             }
             return entity;
         }

@@ -72,7 +72,7 @@ namespace RESTar.SQLite
 
                 case char _:
                 case string _: return $"\'{o}\'";
-                case DateTime _: return $"\'{o:O}\'";
+                case DateTime _: return $"DATETIME(\'{o:O}\')";
                 default: return $"{o}";
             }
         }

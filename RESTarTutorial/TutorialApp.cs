@@ -32,6 +32,9 @@ namespace RESTarTutorial
             // The 'configFilePath' points towards the configuration file, which contains API keys. In this case,
             //   this file is located in the project folder.
             // The 'resourceProviders' parameter is used for SQLite integration
+
+            
+
         }
     }
 
@@ -52,7 +55,6 @@ namespace RESTarTutorial
         [Column] public DateTime DATETIME { get; set; }
         [Column] public decimal DECIMAL { get; set; }
     }
-
 
     [RESTar(GET)]
     public class SuperheroReport : ISelector<SuperheroReport>
