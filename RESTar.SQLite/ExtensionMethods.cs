@@ -10,7 +10,7 @@ namespace RESTar.SQLite
     internal static class ExtensionMethods
     {
         internal static string GetColumnDef(this DeclaredProperty column) =>
-            $"{column.Name.ToLower().Fnuttify()} {column.Type.ToSQLType()}";
+            $"{column.ActualName.ToLower().Fnuttify()} {column.Type.ToSQLType()}";
 
         internal static string GetResourceName(this string tableName) => Resource.ByTypeName(tableName.Replace('$', '.')).Name;
 
@@ -96,6 +96,7 @@ namespace RESTar.SQLite
             var values = string.Join(" AND ", conditions.Where(c => !c.Skip).Select(c =>
             {
                 var op = GetSQLOperator(c.Operator);
+                var key = c.Term.First.ActualName;
                 var valueLiteral = MakeSQLValueLiteral((object) c.Value);
                 if (valueLiteral == "NULL")
                 {
@@ -110,7 +111,7 @@ namespace RESTar.SQLite
                         default: throw new SQLiteException($"Operator '{op}' is not valid for comparison with NULL");
                     }
                 }
-                return $"{c.Key.Fnuttify()} {op} {valueLiteral}";
+                return $"{key.Fnuttify()} {op} {valueLiteral}";
             }));
             return string.IsNullOrWhiteSpace(values) ? null : "WHERE " + values;
         }
