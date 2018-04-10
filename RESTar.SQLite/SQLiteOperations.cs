@@ -1,5 +1,5 @@
 ﻿using System.Linq;
-using RESTar.Deflection.Dynamic;
+using RESTar.Reflection.Dynamic;
 using RESTar.Linq;
 using RESTar.Operations;
 
@@ -25,9 +25,9 @@ namespace RESTar.SQLite
                     .Select(sql.ToSQLiteWhereClause())
                     .Where(post);
             };
-            Insert = r => SQLite<T>.Insert(r.GetEntities());
-            Update = r => SQLite<T>.Update(r.GetEntities());
-            Delete = r => SQLite<T>.Delete(r.GetEntities());
+            Insert = r => SQLite<T>.Insert(r.GetInputEntities());
+            Update = r => SQLite<T>.Update(r.GetInputEntities());
+            Delete = r => SQLite<T>.Delete(r.GetInputEntities());
             Count = request =>
             {
                 var (sql, post) = request.Conditions.Split(c =>

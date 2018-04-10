@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using RESTar.Operations;
 using RESTar.SQLite;
-using static RESTar.Methods;
+using static RESTar.Method;
 
 namespace RESTarTutorial
 {
@@ -32,9 +33,6 @@ namespace RESTarTutorial
             // The 'configFilePath' points towards the configuration file, which contains API keys. In this case,
             //   this file is located in the project folder.
             // The 'resourceProviders' parameter is used for SQLite integration
-
-            
-
         }
     }
 
@@ -54,6 +52,8 @@ namespace RESTarTutorial
         [Column] public int INT { get; set; }
         [Column] public DateTime DATETIME { get; set; }
         [Column] public decimal DECIMAL { get; set; }
+
+        public int STRLength => STR.Length;
     }
 
     [RESTar(GET)]

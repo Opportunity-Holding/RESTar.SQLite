@@ -2,8 +2,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Data.SQLite;
-using RESTar.Deflection;
-using RESTar.Deflection.Dynamic;
+using RESTar.Reflection;
+using RESTar.Reflection.Dynamic;
 
 namespace RESTar.SQLite
 {

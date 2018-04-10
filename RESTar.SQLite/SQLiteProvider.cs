@@ -4,12 +4,11 @@ using System.Data.SQLite;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using RESTar.Internal;
 using RESTar.Linq;
 using RESTar.Operations;
 using RESTar.Resources;
 using Starcounter;
-using static RESTar.Methods;
+using static RESTar.Method;
 
 namespace RESTar.SQLite
 {

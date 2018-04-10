@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SQLite;
 using System.Linq;
-using RESTar.Deflection.Dynamic;
-using RESTar.Internal;
 using RESTar.Linq;
+using RESTar.Reflection.Dynamic;
+using RESTar.Resources;
 
 namespace RESTar.SQLite
 {
