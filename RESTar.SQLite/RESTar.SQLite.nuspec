@@ -2,7 +2,7 @@
 <package>
   <metadata>
     <id>RESTar.SQLite</id>
-    <version>0.4.15</version>
+    <version>0.4.16</version>
     <title>RESTar.SQLite</title>
     <authors>Erik von Krusenstierna</authors>
     <owners>Mopedo AB</owners>
@@ -13,6 +13,6 @@
     <tags>mopedo starcounter REST RESTful web services dynamit sqlite RESTar</tags>
     <licenseUrl>https://github.com/Mopedo/RESTar.SQLite/blob/master/LICENSE</licenseUrl>
     <projectUrl>https://github.com/Mopedo/RESTar.SQLite</projectUrl>
-    <iconUrl>https://storage.googleapis.com/mopedo-resources/RESTar_logo.png</iconUrl>
+    <iconUrl>https://storage.googleapis.com/mopedo-resources/Regular_png_largeframe.png</iconUrl>
   </metadata>
 </package>
