@@ -1,14 +1,13 @@
 <?xml version="1.0"?>
-
 <package>
   <metadata>
     <id>RESTar.SQLite</id>
-    <version>0.4.10</version>
+    <version>0.4.15</version>
     <title>RESTar.SQLite</title>
     <authors>Erik von Krusenstierna</authors>
     <owners>Mopedo AB</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>An SQLite resource provider for RESTar. Spec: https://goo.gl/LJkkiz . For Starcounter 2.3.1.8329 or later</description>
+    <description>An SQLite resource provider for RESTar. Spec: https://goo.gl/LJkkiz . For Starcounter 2.3.2.930 or later</description>
     <releaseNotes></releaseNotes>
     <copyright>Copyright 2017 Mopedo AB. All rights reserved.</copyright>
     <tags>mopedo starcounter REST RESTful web services dynamit sqlite RESTar</tags>

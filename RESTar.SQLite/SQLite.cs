@@ -22,7 +22,7 @@ namespace RESTar.SQLite
         public static IEnumerable<T> Select(string where = null)
         {
             var sql = $"SELECT RowId,* FROM {typeof(T).GetSQLiteTableName().Fnuttify()} {where}";
-            return new SQLiteIterator<T>(sql).AsParallel();
+            return new SQLiteEnumerable<T>(sql).AsParallel();
         }
 
         /// <summary>

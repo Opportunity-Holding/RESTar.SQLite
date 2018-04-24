@@ -1,8 +1,5 @@
 ﻿Newtonsoft.Json
-DocumentFormat.OpenXML
-ClosedXml
-Excel
 System.ValueTuple
-FastMember.Signed
+EPPlus
 System.Data.SQLite
 SQLite.Interop
