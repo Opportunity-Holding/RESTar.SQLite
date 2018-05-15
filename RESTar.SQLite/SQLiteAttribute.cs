@@ -1,4 +1,6 @@
-﻿namespace RESTar.SQLite
+﻿using RESTar.Resources;
+
+namespace RESTar.SQLite
 {
     /// <inheritdoc />
     /// <summary>

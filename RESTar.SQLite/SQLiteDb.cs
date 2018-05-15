@@ -4,8 +4,7 @@ using System.Data;
 using System.Data.SQLite;
 using System.Linq;
 using RESTar.Linq;
-using RESTar.Reflection.Dynamic;
-using RESTar.Resources;
+using RESTar.Meta;
 
 namespace RESTar.SQLite
 {

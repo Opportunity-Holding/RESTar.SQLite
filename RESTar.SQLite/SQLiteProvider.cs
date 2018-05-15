@@ -5,8 +5,9 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using RESTar.Linq;
-using RESTar.Operations;
+using RESTar.Meta;
 using RESTar.Resources;
+using RESTar.Resources.Operations;
 using Starcounter;
 using static RESTar.Method;
 

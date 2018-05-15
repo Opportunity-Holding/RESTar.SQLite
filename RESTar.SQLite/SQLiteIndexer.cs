@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using RESTar.Admin;
 using RESTar.Linq;
+using RESTar.Requests;
+using RESTar.Resources;
 
 namespace RESTar.SQLite
 {

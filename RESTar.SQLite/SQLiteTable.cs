@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using RESTar.Resources;
 
 namespace RESTar.SQLite
 {
