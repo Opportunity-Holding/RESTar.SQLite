@@ -1,15 +1,51 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SQLite;
 using System.Linq;
 using RESTar.Linq;
 using RESTar.Meta;
+using static System.Reflection.BindingFlags;
 
 namespace RESTar.SQLite
 {
-    internal static class SQLiteDb
+    /// <summary>
+    /// The integration point between RESTar.SQLite and System.Data.SQLite
+    /// </summary>
+    internal static class SQLiteDbController
     {
+        private static IDictionary<Type, string> TableBindings { get; }
+
+        static SQLiteDbController()
+        {
+            TableBindings = new ConcurrentDictionary<Type, string>();
+        }
+
+        private static bool IsInitiated { get; set; }
+
+        internal static void Init()
+        {
+            if (IsInitiated) return;
+            typeof(object)
+                .GetConcreteSubclasses()
+                .ForEach(type =>
+                {
+                    if (!type.HasAttribute(out SQLiteAttribute attribute))
+                        return;
+                });
+
+
+            IsInitiated = true;
+        }
+
+        private static void CreateTableIfNotExists(Type type) => Query
+        (
+            sql: $"CREATE TABLE IF NOT EXISTS {type.GetSQLiteTableName()} " +
+                 $"({string.Join(",", type.GetColumns().Values.Select(c => c.GetColumnDef()))})",
+            action: command => command.ExecuteNonQuery()
+        );
+
         private static void CreateTableIfNotExists(IResource resource) => Query
         (
             sql: $"CREATE TABLE IF NOT EXISTS {resource.GetSQLiteTableName()} " +
@@ -44,10 +80,11 @@ namespace RESTar.SQLite
             uncheckedColumns.Values.ForEach(column => AddColumn(resource, column));
         }
 
-        internal static void SetupTables(IEnumerable<IResource> resources) => resources.ForEach(resource =>
+        internal static void EnsureTablesForResources(IEnumerable<IResource> resources) => resources.ForEach(resource =>
         {
             CreateTableIfNotExists(resource);
             UpdateTableSchema(resource);
+            TableCache.Add(resource);
         });
 
         internal static int Query(string sql)
@@ -62,7 +99,7 @@ namespace RESTar.SQLite
             using (var connection = new SQLiteConnection(Settings.ConnectionString))
             {
                 connection.Open();
-                action(new SQLiteCommand(sql, connection){CommandType = CommandType.Text});
+                action(new SQLiteCommand(sql, connection) {CommandType = CommandType.Text});
             }
         }
 

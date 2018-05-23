@@ -7,7 +7,7 @@ namespace RESTar.SQLite
     /// Decorate a class definition with this attribute to register it with 
     /// the SQLite resource provider.
     /// </summary>
-    public sealed class SQLiteAttribute : ResourceProviderAttribute
+    public sealed class SQLiteAttribute : EntityResourceProviderAttribute
     {
         /// <summary>
         /// To manually bind against a certain SQLite table, set the CustomTableName 

@@ -26,7 +26,7 @@ namespace RESTarTutorial
                 uri: "/api",
                 requireApiKey: true,
                 configFilePath: projectFolder + "/Config.xml",
-                resourceProviders: new[] {new SQLiteProvider(projectFolder, "data")}
+                entityResourceProviders: new[] {new SQLiteProvider(projectFolder, "data")}
             );
 
             // The 'port' argument sets the HTTP port on which to register the REST handlers
@@ -58,6 +58,17 @@ namespace RESTarTutorial
         public int STRLength => STR.Length;
     }
 
+    [SQLite]
+    public class SQLiteResource2 : SQLiteTable
+    {
+        [Column] public string STR { get; set; }
+        [Column] public int INT { get; set; }
+        [Column] public DateTime DATETIME { get; set; }
+        [Column] public decimal DECIMAL { get; set; }
+
+        public int STRLength => STR.Length;
+    }
+    
     [RESTar(GET)]
     public class SuperheroReport : ISelector<SuperheroReport>
     {

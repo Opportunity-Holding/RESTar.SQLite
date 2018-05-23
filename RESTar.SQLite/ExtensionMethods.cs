@@ -44,24 +44,65 @@ namespace RESTar.SQLite
             return (split[0], split.ElementAtOrDefault(1));
         }
 
-        internal static string ToSQLType(this Type type)
+        internal static Schema GetSchema(this IResource resource)
         {
-            switch (Type.GetTypeCode(type))
+            var columns = new List<Column>();
+            SQLiteDbController.Query($"PRAGMA table_info({resource.GetSQLiteTableName()})", row =>
             {
-                case TypeCode.Int16: return "SMALLINT";
-                case TypeCode.Int32: return "INT";
-                case TypeCode.Int64: return "BIGINT";
-                case TypeCode.Single: return "SINGLE";
-                case TypeCode.Double: return "DOUBLE";
-                case TypeCode.Decimal: return "DECIMAL";
-                case TypeCode.Byte: return "TINYINT";
-                case TypeCode.String: return "TEXT";
-                case TypeCode.Boolean: return "BOOLEAN";
-                case TypeCode.DateTime: return "DATETIME";
-                case var _ when type.IsNullable(out var t): return t.ToSQLType();
-                default: return null;
+                var columnName = row.GetString(1);
+                var columnType = row.GetString(2);
+                columns.Add(new Column(columnName, columnType.GetTypeCode()));
+
+                //if (!uncheckedColumns.TryGetValue(columnName, out var correspondingColumn))
+                //    return;
+                //var foundType = correspondingColumn.Type.ToSQLType();
+                //if (!string.Equals(foundType, columnType, StringComparison.OrdinalIgnoreCase))
+                //{
+                //    throw new SQLiteException($"The underlying database schema for SQLite resource '{resource.Name}' has " +
+                //                              $"changed. Cannot convert column of SQLite type '{columnType}' to '{foundType}' " +
+                //                              $"in SQLite database table '{resource.GetSQLiteTableName()}'.");
+                //}
+                //uncheckedColumns.Remove(columnName);
+            });
+            return null;
+        }
+
+        internal static TypeCode GetTypeCode(this string sqlTypeString)
+        {
+            switch (sqlTypeString.ToUpperInvariant())
+            {
+                case "SMALLINT": return TypeCode.Int16;
+                case "INT": return TypeCode.Int32;
+                case "BIGINT": return TypeCode.Int64;
+                case "SINGLE": return TypeCode.Single;
+                case "DOUBLE": return TypeCode.Double;
+                case "DECIMAL": return TypeCode.Decimal;
+                case "TINYINT": return TypeCode.Byte;
+                case "TEXT": return TypeCode.String;
+                case "BOOLEAN": return TypeCode.Boolean;
+                case "DATETIME": return TypeCode.DateTime;
+                default: throw new ArgumentOutOfRangeException();
             }
         }
+
+        //internal static string ToSQLType(this Type type)
+        //{
+        //    switch (Type.GetTypeCode(type))
+        //    {
+        //        case TypeCode.Int16: return "SMALLINT";
+        //        case TypeCode.Int32: return "INT";
+        //        case TypeCode.Int64: return "BIGINT";
+        //        case TypeCode.Single: return "SINGLE";
+        //        case TypeCode.Double: return "DOUBLE";
+        //        case TypeCode.Decimal: return "DECIMAL";
+        //        case TypeCode.Byte: return "TINYINT";
+        //        case TypeCode.String: return "TEXT";
+        //        case TypeCode.Boolean: return "BOOLEAN";
+        //        case TypeCode.DateTime: return "DATETIME";
+        //        case var _ when type.IsNullable(out var t): return t.ToSQLType();
+        //        default: return null;
+        //    }
+        //}
 
         private static string MakeSQLValueLiteral(this object o)
         {

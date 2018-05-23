@@ -32,7 +32,7 @@ namespace RESTar.SQLite
         public static int Insert(T entity)
         {
             if (entity == default(T)) return 0;
-            return SQLiteDb.Query(
+            return SQLiteDbController.Query(
                 $"INSERT INTO {typeof(T).GetSQLiteTableName().Fnuttify()} " +
                 $"VALUES ({entity.ToSQLiteInsertValues()})"
             );
@@ -47,7 +47,7 @@ namespace RESTar.SQLite
             if (entities == null) return 0;
             var count = 0;
             var sqlStub = $"INSERT INTO {typeof(T).GetSQLiteTableName().Fnuttify()} VALUES ";
-            SQLiteDb.Transact(command => entities.ForEach(entity =>
+            SQLiteDbController.Transact(command => entities.ForEach(entity =>
             {
                 command.CommandText = $"{sqlStub} ({entity.ToSQLiteInsertValues()})";
                 count += command.ExecuteNonQuery();
@@ -62,7 +62,7 @@ namespace RESTar.SQLite
         public static int Update(T updatedEntity)
         {
             if (updatedEntity == default(T)) return 0;
-            return SQLiteDb.Query($"UPDATE {typeof(T).GetSQLiteTableName().Fnuttify()} " +
+            return SQLiteDbController.Query($"UPDATE {typeof(T).GetSQLiteTableName().Fnuttify()} " +
                                   $"SET {updatedEntity.ToSQLiteUpdateSet()} " +
                                   $"WHERE RowId={updatedEntity.RowId}");
         }
@@ -76,7 +76,7 @@ namespace RESTar.SQLite
             if (updatedEntities == null) return 0;
             var count = 0;
             var sqlStub = $"UPDATE {typeof(T).GetSQLiteTableName().Fnuttify()} SET ";
-            SQLiteDb.Transact(command => updatedEntities.ForEach(updatedEntity =>
+            SQLiteDbController.Transact(command => updatedEntities.ForEach(updatedEntity =>
             {
                 command.CommandText = $"{sqlStub} {updatedEntity.ToSQLiteUpdateSet()} " +
                                       $"WHERE RowId={updatedEntity.RowId}";
@@ -92,7 +92,7 @@ namespace RESTar.SQLite
         public static int Delete(T entity)
         {
             if (entity == default(T)) return 0;
-            return SQLiteDb.Query(
+            return SQLiteDbController.Query(
                 $"DELETE FROM {typeof(T).GetSQLiteTableName().Fnuttify()} " +
                 $"WHERE RowId={entity.RowId}"
             );
@@ -109,7 +109,7 @@ namespace RESTar.SQLite
             if (entities == null) return 0;
             var sqlstub = $"DELETE FROM {typeof(T).GetSQLiteTableName().Fnuttify()} WHERE RowId=";
             var count = 0;
-            SQLiteDb.Transact(command => entities.ForEach(entity =>
+            SQLiteDbController.Transact(command => entities.ForEach(entity =>
             {
                 command.CommandText = sqlstub + entity.RowId;
                 count += command.ExecuteNonQuery();

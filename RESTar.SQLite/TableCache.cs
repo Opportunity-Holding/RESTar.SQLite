@@ -6,19 +6,19 @@ using RESTar.Meta;
 
 namespace RESTar.SQLite
 {
-    internal static class Cache
+    internal static class TableCache
     {
         private static readonly Dictionary<Type, Dictionary<string, DeclaredProperty>> Columns;
         private static readonly Dictionary<Type, string> TableNames;
 
-        static Cache()
+        static TableCache()
         {
             Columns = new Dictionary<Type, Dictionary<string, DeclaredProperty>>();
             TableNames = new Dictionary<Type, string>();
         }
 
-        internal static string GetSQLiteTableName(this IResource resource) => GetSQLiteTableName(resource.Type);
-        internal static string GetSQLiteTableName(this Type type) => TableNames[type];
+        //internal static string GetSQLiteTableName(this IResource resource) => GetSQLiteTableName(resource.Type);
+        //internal static string GetSQLiteTableName(this Type type) => TableNames[type];
         internal static Dictionary<string, DeclaredProperty> GetColumns(this IResource resource) => Columns[resource.Type];
         internal static Dictionary<string, DeclaredProperty> GetColumns(this Type type) => Columns[type];
 

@@ -17,7 +17,7 @@ namespace RESTar.SQLite
         public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request)
         {
             var sqls = new List<string>();
-            SQLiteDb.Query("SELECT sql FROM sqlite_master WHERE type='index'", row => sqls.Add(row.GetString(0)));
+            SQLiteDbController.Query("SELECT sql FROM sqlite_master WHERE type='index'", row => sqls.Add(row.GetString(0)));
             return sqls.Select(sql =>
             {
                 var groups = Regex.Match(sql, syntax, RegexOptions.IgnoreCase).Groups;
@@ -43,7 +43,7 @@ namespace RESTar.SQLite
                     throw new Exception("Found no resource to register index on");
                 var sql = $"CREATE INDEX {index.Name.Fnuttify()} ON {index.IResource.GetSQLiteTableName().Fnuttify()} " +
                           $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "ASC")}"))})";
-                count += SQLiteDb.Query(sql);
+                count += SQLiteDbController.Query(sql);
             }
             return count;
         }
@@ -54,8 +54,8 @@ namespace RESTar.SQLite
             var count = 0;
             foreach (var index in request.GetInputEntities())
             {
-                SQLiteDb.Query($"DROP INDEX {index.Name.Fnuttify()} ON {index.IResource.GetSQLiteTableName().Fnuttify()}");
-                count += SQLiteDb.Query($"CREATE INDEX {index.Name.Fnuttify()} ON " +
+                SQLiteDbController.Query($"DROP INDEX {index.Name.Fnuttify()} ON {index.IResource.GetSQLiteTableName().Fnuttify()}");
+                count += SQLiteDbController.Query($"CREATE INDEX {index.Name.Fnuttify()} ON " +
                                         $"{index.IResource.GetSQLiteTableName().Fnuttify()} " +
                                         $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "")}"))})");
             }
@@ -65,7 +65,7 @@ namespace RESTar.SQLite
         public int Delete(IRequest<DatabaseIndex> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            return request.GetInputEntities().Sum(index => SQLiteDb.Query($"DROP INDEX {index.Name.Fnuttify()} ON " +
+            return request.GetInputEntities().Sum(index => SQLiteDbController.Query($"DROP INDEX {index.Name.Fnuttify()} ON " +
                                                                      $"{index.IResource.GetSQLiteTableName().Fnuttify()}"));
         }
     }

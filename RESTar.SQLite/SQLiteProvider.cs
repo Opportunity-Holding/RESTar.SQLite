@@ -22,8 +22,10 @@ namespace RESTar.SQLite
     /// mapping and query building is done by RESTar. Use the DatabaseIndex resource to register indexes 
     /// for SQLite resources (just like you would for Starcounter resources).
     /// </summary>
-    public class SQLiteProvider : ResourceProvider<SQLiteTable>
+    public class SQLiteProvider : EntityResourceProvider<SQLiteTable>
     {
+        static SQLiteProvider() => SQLiteDbController.Init();
+
         /// <inheritdoc />
         public override bool IsValid(IEntityResource resource, out string reason)
         {
@@ -68,6 +70,16 @@ namespace RESTar.SQLite
         }
 
         /// <inheritdoc />
+        public override void ModifyResourceAttribute(Type type, RESTarAttribute attribute)
+        {
+            if (type.IsSubclassOf(typeof(ElasticSQLiteTable)))
+            {
+                attribute.AllowDynamicConditions = true;
+                attribute.FlagStaticMembers = true;
+            }
+        }
+
+        /// <inheritdoc />
         public SQLiteProvider(string databaseDirectory, string databaseName)
         {
             if (!Regex.IsMatch(databaseName, @"^[a-zA-Z0-9_]+$"))
@@ -102,8 +114,7 @@ namespace RESTar.SQLite
                     $"Found an invalid SQLiteTable resource declaration for type '{r.FullName}'. " +
                     "RESTar.SQLite.SQLiteTable subclasses must be declared as RESTar resources or " +
                     "wrapped by a ResourceWrapper"));
-            claimedResources.ForEach(Cache.Add);
-            SQLiteDb.SetupTables(claimedResources);
+            SQLiteDbController.EnsureTablesForResources(claimedResources);
         }
 
         /// <inheritdoc />
