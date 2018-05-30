@@ -49,18 +49,18 @@
     <StartupObject>RESTarTutorial.TutorialApp</StartupObject>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Dynamit, Version=0.1.40.0, Culture=neutral, processorArchitecture=AMD64">
-      <HintPath>..\packages\Dynamit.0.1.40\lib\net452\Dynamit.dll</HintPath>
+    <Reference Include="Dynamit, Version=0.1.42.0, Culture=neutral, processorArchitecture=AMD64">
+      <HintPath>..\packages\Dynamit.0.1.42\lib\net452\Dynamit.dll</HintPath>
     </Reference>
-    <Reference Include="EPPlus, Version=4.5.1.0, Culture=neutral, PublicKeyToken=ea159fdaa78159a1, processorArchitecture=MSIL">
-      <HintPath>..\packages\EPPlus.4.5.1\lib\net40\EPPlus.dll</HintPath>
+    <Reference Include="EPPlus, Version=4.5.2.0, Culture=neutral, PublicKeyToken=ea159fdaa78159a1, processorArchitecture=MSIL">
+      <HintPath>..\packages\EPPlus.4.5.2\lib\net40\EPPlus.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.11.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="PresentationCore" />
-    <Reference Include="RESTar, Version=0.4.35.0, Culture=neutral, processorArchitecture=AMD64">
-      <HintPath>..\packages\RESTar.0.4.35\lib\net452\RESTar.dll</HintPath>
+    <Reference Include="RESTar, Version=0.4.40.0, Culture=neutral, processorArchitecture=AMD64">
+      <HintPath>..\packages\RESTar.0.4.40\lib\net452\RESTar.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
@@ -89,8 +89,8 @@
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Security" />
-    <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.ValueTuple.4.4.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
+    <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.ValueTuple.4.5.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
     </Reference>
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />

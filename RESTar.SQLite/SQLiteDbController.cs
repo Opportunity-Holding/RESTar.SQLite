@@ -15,6 +15,9 @@ namespace RESTar.SQLite
     /// </summary>
     internal static class SQLiteDbController
     {
+        internal const string AllowedCLRDataTypes = "Int16, Int32, Int64, Single, Double, Decimal, Byte, String, Boolean, DateTime";
+        internal const string AllowedSQLDataTypes = "SMALLINT, INT, BIGINT, SINGLE, DOUBLE, DECIMAL, TINYINT, TEXT, BOOLEAN, DATETIME";
+
         private static IDictionary<Type, string> TableBindings { get; }
 
         static SQLiteDbController()
@@ -94,7 +97,7 @@ namespace RESTar.SQLite
             return res;
         }
 
-        private static void Query(string sql, Action<SQLiteCommand> action)
+        internal static void Query(string sql, Action<SQLiteCommand> action)
         {
             using (var connection = new SQLiteConnection(Settings.ConnectionString))
             {

@@ -10,9 +10,6 @@ namespace RESTar.SQLite
 {
     internal static class ExtensionMethods
     {
-        internal static string GetColumnDef(this DeclaredProperty column) =>
-            $"{column.ActualName.ToLower().Fnuttify()} {column.Type.ToSQLType()}";
-
         internal static string GetResourceName(this string tableName) => Resource.ByTypeName(tableName.Replace('$', '.')).Name;
 
         internal static string Fnuttify(this string sqlKey) => $"\"{sqlKey}\"";
@@ -67,7 +64,7 @@ namespace RESTar.SQLite
             return null;
         }
 
-        internal static TypeCode GetTypeCode(this string sqlTypeString)
+        internal static TypeCode ToCLRTypeCode(this string sqlTypeString)
         {
             switch (sqlTypeString.ToUpperInvariant())
             {
@@ -81,28 +78,52 @@ namespace RESTar.SQLite
                 case "TEXT": return TypeCode.String;
                 case "BOOLEAN": return TypeCode.Boolean;
                 case "DATETIME": return TypeCode.DateTime;
-                default: throw new ArgumentOutOfRangeException();
+                case var other:
+                    throw new ArgumentException(
+                        $"Invalid SQL data type for column. SQL type '{other}' is not supported by RESTar.SQLite. " +
+                        $"Allowed values: {SQLiteDbController.AllowedSQLDataTypes}");
             }
         }
 
-        //internal static string ToSQLType(this Type type)
-        //{
-        //    switch (Type.GetTypeCode(type))
-        //    {
-        //        case TypeCode.Int16: return "SMALLINT";
-        //        case TypeCode.Int32: return "INT";
-        //        case TypeCode.Int64: return "BIGINT";
-        //        case TypeCode.Single: return "SINGLE";
-        //        case TypeCode.Double: return "DOUBLE";
-        //        case TypeCode.Decimal: return "DECIMAL";
-        //        case TypeCode.Byte: return "TINYINT";
-        //        case TypeCode.String: return "TEXT";
-        //        case TypeCode.Boolean: return "BOOLEAN";
-        //        case TypeCode.DateTime: return "DATETIME";
-        //        case var _ when type.IsNullable(out var t): return t.ToSQLType();
-        //        default: return null;
-        //    }
-        //}
+        internal static TypeCode ValidateCLRTypeCode(this TypeCode typeCode)
+        {
+            switch (typeCode)
+            {
+                case TypeCode.Int16:
+                case TypeCode.Int32:
+                case TypeCode.Int64:
+                case TypeCode.Single:
+                case TypeCode.Double:
+                case TypeCode.Decimal:
+                case TypeCode.Byte:
+                case TypeCode.String:
+                case TypeCode.Boolean:
+                case TypeCode.DateTime: return typeCode;
+                case var other:
+                    throw new ArgumentException(
+                        $"Invalid CLR data type \'{other}\' for SQLite column. " +
+                        $"Allowed values: {SQLiteDbController.AllowedCLRDataTypes}");
+            }
+        }
+
+        internal static string ToSQLTypeString(this Type type)
+        {
+            switch (Type.GetTypeCode(type))
+            {
+                case TypeCode.Int16: return "SMALLINT";
+                case TypeCode.Int32: return "INT";
+                case TypeCode.Int64: return "BIGINT";
+                case TypeCode.Single: return "SINGLE";
+                case TypeCode.Double: return "DOUBLE";
+                case TypeCode.Decimal: return "DECIMAL";
+                case TypeCode.Byte: return "TINYINT";
+                case TypeCode.String: return "TEXT";
+                case TypeCode.Boolean: return "BOOLEAN";
+                case TypeCode.DateTime: return "DATETIME";
+                case var _ when type.IsNullable(out var t): return t.ToSQLTypeString();
+                default: return null;
+            }
+        }
 
         private static string MakeSQLValueLiteral(this object o)
         {
