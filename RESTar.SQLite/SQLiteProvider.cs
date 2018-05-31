@@ -22,10 +22,10 @@ namespace RESTar.SQLite
     /// mapping and query building is done by RESTar. Use the DatabaseIndex resource to register indexes 
     /// for SQLite resources (just like you would for Starcounter resources).
     /// </summary>
-    public class SQLiteProvider : ResourceProvider<SQLiteTable>
+    public class SQLiteProvider : EntityResourceProvider<SQLiteTable>
     {
         /// <inheritdoc />
-        public override bool IsValid(IEntityResource resource, out string reason)
+        protected override bool IsValid(IEntityResource resource, out string reason)
         {
             var columnProperties = resource.Members.Values
                 .Where(p => p.HasAttribute<ColumnAttribute>())
@@ -68,6 +68,9 @@ namespace RESTar.SQLite
         }
 
         /// <inheritdoc />
+        public override IDatabaseIndexer DatabaseIndexer { get; }
+
+        /// <inheritdoc />
         public SQLiteProvider(string databaseDirectory, string databaseName)
         {
             if (!Regex.IsMatch(databaseName, @"^[a-zA-Z0-9_]+$"))
@@ -107,24 +110,24 @@ namespace RESTar.SQLite
         }
 
         /// <inheritdoc />
-        public override Type AttributeType => typeof(SQLiteAttribute);
+        protected override Type AttributeType => typeof(SQLiteAttribute);
 
         /// <inheritdoc />
-        public override Selector<T> GetDefaultSelector<T>() => SQLiteOperations<T>.Select;
+        protected override Selector<T> GetDefaultSelector<T>() => SQLiteOperations<T>.Select;
 
         /// <inheritdoc />
-        public override Inserter<T> GetDefaultInserter<T>() => SQLiteOperations<T>.Insert;
+        protected override Inserter<T> GetDefaultInserter<T>() => SQLiteOperations<T>.Insert;
 
         /// <inheritdoc />
-        public override Updater<T> GetDefaultUpdater<T>() => SQLiteOperations<T>.Update;
+        protected override Updater<T> GetDefaultUpdater<T>() => SQLiteOperations<T>.Update;
 
         /// <inheritdoc />
-        public override Deleter<T> GetDefaultDeleter<T>() => SQLiteOperations<T>.Delete;
+        protected override Deleter<T> GetDefaultDeleter<T>() => SQLiteOperations<T>.Delete;
 
         /// <inheritdoc />
-        public override Counter<T> GetDefaultCounter<T>() => SQLiteOperations<T>.Count;
+        protected override Counter<T> GetDefaultCounter<T>() => SQLiteOperations<T>.Count;
 
         /// <inheritdoc />
-        public override Profiler<T> GetProfiler<T>() => null;
+        protected override Profiler<T> GetProfiler<T>() => null;
     }
 }
