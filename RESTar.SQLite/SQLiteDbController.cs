@@ -4,9 +4,8 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SQLite;
 using System.Linq;
-using RESTar.Linq;
-using RESTar.Meta;
-using static System.Reflection.BindingFlags;
+using RESTar.SQLite.Meta;
+using static RESTar.SQLite.TableMappingKind;
 
 namespace RESTar.SQLite
 {
@@ -27,68 +26,44 @@ namespace RESTar.SQLite
 
         private static bool IsInitiated { get; set; }
 
+
         internal static void Init()
         {
             if (IsInitiated) return;
-            typeof(object)
-                .GetConcreteSubclasses()
-                .ForEach(type =>
-                {
-                    if (!type.HasAttribute(out SQLiteAttribute attribute))
-                        return;
-                });
 
+            SetupDeclaredTypes();
 
             IsInitiated = true;
         }
 
-        private static void CreateTableIfNotExists(Type type) => Query
-        (
-            sql: $"CREATE TABLE IF NOT EXISTS {type.GetSQLiteTableName()} " +
-                 $"({string.Join(",", type.GetColumns().Values.Select(c => c.GetColumnDef()))})",
-            action: command => command.ExecuteNonQuery()
-        );
-
-        private static void CreateTableIfNotExists(IResource resource) => Query
-        (
-            sql: $"CREATE TABLE IF NOT EXISTS {resource.GetSQLiteTableName()} " +
-                 $"({string.Join(",", resource.GetColumns().Values.Select(c => c.GetColumnDef()))})",
-            action: command => command.ExecuteNonQuery()
-        );
-
-        private static void AddColumn(IResource resource, DeclaredProperty toAdd) => Query
-        (
-            sql: $"ALTER TABLE {resource.GetSQLiteTableName()} ADD COLUMN {toAdd.GetColumnDef()}",
-            action: command => command.ExecuteNonQuery()
-        );
-
-        private static void UpdateTableSchema(IResource resource)
+        private static void Validate(Type type)
         {
-            var uncheckedColumns = new Dictionary<string, DeclaredProperty>(resource.GetColumns(), StringComparer.OrdinalIgnoreCase);
-            Query($"PRAGMA table_info({resource.GetSQLiteTableName()})", row =>
-            {
-                var columnName = row.GetString(1);
-                var columnType = row.GetString(2);
-                if (!uncheckedColumns.TryGetValue(columnName, out var correspondingColumn))
-                    return;
-                var foundType = correspondingColumn.Type.ToSQLType();
-                if (!string.Equals(foundType, columnType, StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new SQLiteException($"The underlying database schema for SQLite resource '{resource.Name}' has " +
-                                              $"changed. Cannot convert column of SQLite type '{columnType}' to '{foundType}' " +
-                                              $"in SQLite database table '{resource.GetSQLiteTableName()}'.");
-                }
-                uncheckedColumns.Remove(columnName);
-            });
-            uncheckedColumns.Values.ForEach(column => AddColumn(resource, column));
+            if (type.GetConstructor(Type.EmptyTypes) == null)
+                throw new SQLiteException($"Expected parameterless constructor for SQLite type '{type}'.");
+            if (type.FullName == null)
+                throw new SQLiteException($"SQLite encountered an unknown type: '{type.GUID}'");
+            var columnProperties = type.GetDeclaredColumnProperties();
+            if (columnProperties.Values.All(p => p.Name == "RowId"))
+                throw new SQLiteException(
+                    $"No public auto-implemented instance properties found in type '{type}'. SQLite does not support empty tables, " +
+                    "so each SQLiteTable must define at least one public auto-implemented instance property.");
         }
 
-        internal static void EnsureTablesForResources(IEnumerable<IResource> resources) => resources.ForEach(resource =>
+        /// <summary>
+        /// Finds all static declared SQLiteTable CLR classes and maps them to corresponding SQLite tables
+        /// </summary>
+        private static void SetupDeclaredTypes()
         {
-            CreateTableIfNotExists(resource);
-            UpdateTableSchema(resource);
-            TableCache.Add(resource);
-        });
+            foreach (var type in typeof(SQLiteTable).GetConcreteSubclasses())
+            {
+                Validate(type);
+                new TableMapping
+                (
+                    clrClass: type,
+                    tableMappingKind: type.IsSubclassOf(typeof(ElasticSQLiteTable)) ? ElasticDeclared : StaticDeclared
+                );
+            }
+        }
 
         internal static int Query(string sql)
         {

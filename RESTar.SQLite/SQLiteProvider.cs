@@ -8,8 +8,8 @@ using RESTar.Linq;
 using RESTar.Meta;
 using RESTar.Resources;
 using RESTar.Resources.Operations;
+using RESTar.SQLite.Meta;
 using Starcounter;
-using static RESTar.Method;
 
 namespace RESTar.SQLite
 {
@@ -30,42 +30,6 @@ namespace RESTar.SQLite
         /// <inheritdoc />
         protected override bool IsValid(IEntityResource resource, out string reason)
         {
-            var columnProperties = resource.Members.Values
-                .Where(p => p.HasAttribute<ColumnAttribute>())
-                .ToList();
-            if (!columnProperties.Any())
-            {
-                reason = "SQLite resource types must contain at least one public instance property declared " +
-                         "as column using the ColumnAttribute";
-                return false;
-            }
-
-            if (!typeof(SQLiteTable).IsAssignableFrom(resource.Type))
-            {
-                reason = $"'{resource.Type.FullName}' does not subclass the '{typeof(SQLiteTable).FullName}' abstract " +
-                         "class needed for all SQLite resource types.";
-                return false;
-            }
-
-            if (resource.AvailableMethods.Contains(POST) && resource.Type.GetConstructor(Type.EmptyTypes) == null)
-                reason = $"Expected parameterless constructor for type '{resource.Type.FullName}' to support POST";
-
-            foreach (var column in columnProperties)
-            {
-                if (column.Name.ToLower() == "rowid")
-                {
-                    reason = "SQLite resources cannot contain column properties called 'RowId' or any case " +
-                             "variants of it";
-                    return false;
-                }
-
-                if (!column.Type.IsSQLiteCompatibleValueType(resource.Type, out var error))
-                {
-                    reason = error;
-                    return false;
-                }
-            }
-
             reason = null;
             return true;
         }
@@ -80,8 +44,9 @@ namespace RESTar.SQLite
             }
         }
 
+        /// <inheritdoc />
         public override IDatabaseIndexer DatabaseIndexer { get; }
-        
+
         /// <inheritdoc />
         public SQLiteProvider(string databaseDirectory, string databaseName)
         {
@@ -108,17 +73,10 @@ namespace RESTar.SQLite
         }
 
         /// <inheritdoc />
-        public override void ReceiveClaimed(ICollection<IEntityResource> claimedResources)
-        {
-            typeof(SQLiteTable)
-                .GetConcreteSubclasses()
-                .Except(claimedResources.Select(r => r.Type))
-                .ForEach(r => throw new SQLiteException(
-                    $"Found an invalid SQLiteTable resource declaration for type '{r.FullName}'. " +
-                    "RESTar.SQLite.SQLiteTable subclasses must be declared as RESTar resources or " +
-                    "wrapped by a ResourceWrapper"));
-            SQLiteDbController.EnsureTablesForResources(claimedResources);
-        }
+        public override void ReceiveClaimed(ICollection<IEntityResource> claimedResources) => claimedResources
+            .Where(c => TableMapping.Get(c.Type) == null)
+            .ForEach(c => throw new SQLiteException($"A resource '{c}' was claimed by the SQLite resource provider, but had " +
+                                                    "no existing table mapping"));
 
         /// <inheritdoc />
         protected override Type AttributeType => typeof(SQLiteAttribute);

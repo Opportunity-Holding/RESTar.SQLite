@@ -3,6 +3,7 @@ using System.Data;
 using System.Data.SQLite;
 using System.Linq;
 using RESTar.Linq;
+using RESTar.SQLite.Meta;
 
 namespace RESTar.SQLite
 {
@@ -21,7 +22,7 @@ namespace RESTar.SQLite
         /// <returns></returns>
         public static IEnumerable<T> Select(string where = null)
         {
-            var sql = $"SELECT RowId,* FROM {typeof(T).GetSQLiteTableName().Fnuttify()} {where}";
+            var sql = $"SELECT RowId,* FROM {TableMapping<T>.TableName} {where}";
             return new SQLiteEnumerable<T>(sql).AsParallel();
         }
 
@@ -32,10 +33,7 @@ namespace RESTar.SQLite
         public static int Insert(T entity)
         {
             if (entity == default(T)) return 0;
-            return SQLiteDbController.Query(
-                $"INSERT INTO {typeof(T).GetSQLiteTableName().Fnuttify()} " +
-                $"VALUES ({entity.ToSQLiteInsertValues()})"
-            );
+            return SQLiteDbController.Query($"INSERT INTO {TableMapping<T>.TableName} VALUES ({entity.ToSQLiteInsertValues()})");
         }
 
         /// <summary>
@@ -46,7 +44,7 @@ namespace RESTar.SQLite
         {
             if (entities == null) return 0;
             var count = 0;
-            var sqlStub = $"INSERT INTO {typeof(T).GetSQLiteTableName().Fnuttify()} VALUES ";
+            var sqlStub = $"INSERT INTO {TableMapping<T>.TableName} VALUES ";
             SQLiteDbController.Transact(command => entities.ForEach(entity =>
             {
                 command.CommandText = $"{sqlStub} ({entity.ToSQLiteInsertValues()})";
@@ -62,9 +60,8 @@ namespace RESTar.SQLite
         public static int Update(T updatedEntity)
         {
             if (updatedEntity == default(T)) return 0;
-            return SQLiteDbController.Query($"UPDATE {typeof(T).GetSQLiteTableName().Fnuttify()} " +
-                                  $"SET {updatedEntity.ToSQLiteUpdateSet()} " +
-                                  $"WHERE RowId={updatedEntity.RowId}");
+            return SQLiteDbController.Query($"UPDATE {TableMapping<T>.TableName} SET {updatedEntity.ToSQLiteUpdateSet()} " +
+                                            $"WHERE RowId={updatedEntity.RowId}");
         }
 
         /// <summary>
@@ -75,11 +72,10 @@ namespace RESTar.SQLite
         {
             if (updatedEntities == null) return 0;
             var count = 0;
-            var sqlStub = $"UPDATE {typeof(T).GetSQLiteTableName().Fnuttify()} SET ";
+            var sqlStub = $"UPDATE {TableMapping<T>.TableName} SET ";
             SQLiteDbController.Transact(command => updatedEntities.ForEach(updatedEntity =>
             {
-                command.CommandText = $"{sqlStub} {updatedEntity.ToSQLiteUpdateSet()} " +
-                                      $"WHERE RowId={updatedEntity.RowId}";
+                command.CommandText = $"{sqlStub} {updatedEntity.ToSQLiteUpdateSet()} WHERE RowId={updatedEntity.RowId}";
                 count += command.ExecuteNonQuery();
             }));
             return count;
@@ -92,9 +88,7 @@ namespace RESTar.SQLite
         public static int Delete(T entity)
         {
             if (entity == default(T)) return 0;
-            return SQLiteDbController.Query(
-                $"DELETE FROM {typeof(T).GetSQLiteTableName().Fnuttify()} " +
-                $"WHERE RowId={entity.RowId}"
+            return SQLiteDbController.Query($"DELETE FROM {TableMapping<T>.TableName} WHERE RowId={entity.RowId}"
             );
         }
 
@@ -107,7 +101,7 @@ namespace RESTar.SQLite
         public static int Delete(IEnumerable<T> entities)
         {
             if (entities == null) return 0;
-            var sqlstub = $"DELETE FROM {typeof(T).GetSQLiteTableName().Fnuttify()} WHERE RowId=";
+            var sqlstub = $"DELETE FROM {TableMapping<T>.TableName} WHERE RowId=";
             var count = 0;
             SQLiteDbController.Transact(command => entities.ForEach(entity =>
             {
@@ -125,7 +119,7 @@ namespace RESTar.SQLite
         /// <returns></returns>
         public static long Count(string where = null)
         {
-            var sql = $"SELECT COUNT(RowId) FROM {typeof(T).GetSQLiteTableName().Fnuttify()} {where}";
+            var sql = $"SELECT COUNT(RowId) FROM {TableMapping<T>.TableName} {where}";
             using (var connection = new SQLiteConnection(Settings.ConnectionString))
             {
                 connection.Open();

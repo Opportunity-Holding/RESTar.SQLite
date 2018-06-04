@@ -6,6 +6,7 @@ using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Requests;
 using RESTar.Resources;
+using RESTar.SQLite.Meta;
 
 namespace RESTar.SQLite
 {
@@ -39,9 +40,10 @@ namespace RESTar.SQLite
             var count = 0;
             foreach (var index in request.GetInputEntities())
             {
+                var tableMapping = TableMapping.Get(index.IResource.Type);
                 if (index.IResource == null)
                     throw new Exception("Found no resource to register index on");
-                var sql = $"CREATE INDEX {index.Name.Fnuttify()} ON {index.IResource.GetSQLiteTableName().Fnuttify()} " +
+                var sql = $"CREATE INDEX {index.Name.Fnuttify()} ON {tableMapping.TableName} " +
                           $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "ASC")}"))})";
                 count += SQLiteDbController.Query(sql);
             }
@@ -54,10 +56,11 @@ namespace RESTar.SQLite
             var count = 0;
             foreach (var index in request.GetInputEntities())
             {
-                SQLiteDbController.Query($"DROP INDEX {index.Name.Fnuttify()} ON {index.IResource.GetSQLiteTableName().Fnuttify()}");
-                count += SQLiteDbController.Query($"CREATE INDEX {index.Name.Fnuttify()} ON " +
-                                        $"{index.IResource.GetSQLiteTableName().Fnuttify()} " +
-                                        $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "")}"))})");
+                var tableMapping = TableMapping.Get(index.IResource.Type);
+                SQLiteDbController.Query($"DROP INDEX {index.Name.Fnuttify()} ON {tableMapping.TableName}");
+                var sql = $"CREATE INDEX {index.Name.Fnuttify()} ON {tableMapping.TableName} " +
+                          $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "")}"))})";
+                count += SQLiteDbController.Query(sql);
             }
             return count;
         }
@@ -65,8 +68,11 @@ namespace RESTar.SQLite
         public int Delete(IRequest<DatabaseIndex> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            return request.GetInputEntities().Sum(index => SQLiteDbController.Query($"DROP INDEX {index.Name.Fnuttify()} ON " +
-                                                                     $"{index.IResource.GetSQLiteTableName().Fnuttify()}"));
+            return request.GetInputEntities().Sum(index =>
+            {
+                var tableMapping = TableMapping.Get(index.IResource.Type);
+                return SQLiteDbController.Query($"DROP INDEX {index.Name.Fnuttify()} ON {tableMapping.TableName}");
+            });
         }
     }
 }

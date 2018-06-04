@@ -3,13 +3,14 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Data.SQLite;
 using RESTar.Meta;
+using RESTar.SQLite.Meta;
 
 namespace RESTar.SQLite
 {
     internal class SQLiteEnumerator<T> : IEnumerator<T> where T : SQLiteTable
     {
         private static readonly Constructor<T> Constructor = typeof(T).MakeStaticConstructor<T>();
-        private Dictionary<string, DeclaredProperty> Columns { get; }
+        private ColumnMappings Mappings { get; }
         private SQLiteDataReader Reader { get; set; }
         private SQLiteConnection Connection { get; }
         private string SQL { get; }
@@ -32,7 +33,7 @@ namespace RESTar.SQLite
 
         internal SQLiteEnumerator(string sql)
         {
-            Columns = typeof(T).GetColumns();
+            Mappings = TableMapping<T>.ColumnMappings;
             Connection = new SQLiteConnection(Settings.ConnectionString);
             Connection.Open();
             SQL = sql;
@@ -43,11 +44,11 @@ namespace RESTar.SQLite
         {
             var entity = Constructor();
             entity.RowId = Reader.GetInt64(0);
-            foreach (var column in Columns)
+            foreach (var column in Mappings)
             {
-                var value = Reader[column.Key];
+                var value = Reader[column.SQLColumn.Name];
                 if (!(value is DBNull))
-                    column.Value.SetValue(entity, value);
+                    column.CLRProperty.Set(entity, value);
             }
             return entity;
         }

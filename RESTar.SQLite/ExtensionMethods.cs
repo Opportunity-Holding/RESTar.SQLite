@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using RESTar.Meta;
-using RESTar.Requests;
-using static RESTar.Requests.Operators;
+using RESTar.SQLite.Meta;
+using static System.Reflection.BindingFlags;
+using static RESTar.Method;
 
 namespace RESTar.SQLite
 {
@@ -12,28 +14,42 @@ namespace RESTar.SQLite
     {
         internal static string GetResourceName(this string tableName) => Resource.ByTypeName(tableName.Replace('$', '.')).Name;
 
-        internal static string Fnuttify(this string sqlKey) => $"\"{sqlKey}\"";
-
-        internal static bool IsSQLiteCompatibleValueType(this Type type, Type resourceType, out string error)
-        {
-            if (type.ToSQLType() == null)
+        internal static IDictionary<string, CLRProperty> GetDeclaredColumnProperties(this Type type) => type
+            .GetProperties(Public | Instance)
+            .Where(property => !property.HasAttribute(out SQLiteMemberAttribute attribute) || !attribute.Ignored)
+            .Where(property =>
             {
-                error = $"Could not create SQLite database column for a property of type '{type.FullName}' in resource type " +
-                        $"'{resourceType?.FullName}'. Unsupported type";
-                return false;
-            }
-            error = null;
-            return true;
-        }
+                var getter = property.GetGetMethod();
+                var setter = property.GetGetMethod();
+                if (getter == null && setter == null) return false;
+                if (!(getter ?? setter).HasAttribute<CompilerGeneratedAttribute>(out _))
+                    return false;
+                if (getter == null)
+                    throw new SQLiteException($"SQLite type '{type}' contained a public auto-implemented instance property '{property.Name}' " +
+                                              "with a non-defined or non-public get accessor. This property cannot be used with SQLite. To ignore this " +
+                                              "property, decorate it with the 'SQLiteMemberAttribute' and set 'ignore' to true");
+                if (setter == null)
+                    throw new SQLiteException($"SQLite type '{type}' contained a public auto-implemented instance property '{property.Name}' " +
+                                              "with a non-public set accessor. This property cannot be used with SQLite. To ignore this " +
+                                              "property, decorate it with the 'SQLiteMemberAttribute' and set 'ignore' to true");
+                if (!property.PropertyType.IsSQLiteCompatibleValueType())
+                    throw new SQLiteException($"SQLite type '{type}' contained a public auto-implemented instance property '{property.Name}' " +
+                                              $"with a non-compatible type '{property.PropertyType.Name}'. This property cannot be used with SQLite. " +
+                                              "To ignore this property, decorate it with the 'SQLiteMemberAttribute' and set 'ignore' to true. " +
+                                              $"Valid property types: {SQLiteDbController.AllowedCLRDataTypes}");
+                if (property.HasAttribute(out SQLiteMemberAttribute attr) && attr.ColumnName.Equals("rowid", StringComparison.OrdinalIgnoreCase))
+                    throw new SQLiteException($"SQLite type '{type}' contained a public auto-implemented instance property '{property.Name}' " +
+                                              "with a custom column name 'rowid'. This name is reserved by SQLite and cannot be used.");
 
-        private static bool IsNullable(this Type type, out Type baseType)
-        {
-            baseType = null;
-            if (!type.IsGenericType || type.GetGenericTypeDefinition() != typeof(Nullable<>))
-                return false;
-            baseType = type.GenericTypeArguments[0];
-            return true;
-        }
+                return true;
+            })
+            .ToDictionary(
+                keySelector: property => property.Name.ToUpperInvariant(),
+                elementSelector: property => new CLRProperty(property)
+            );
+
+
+        private static bool IsNullable(this Type type, out Type baseType) => (baseType = Nullable.GetUnderlyingType(type)) != null;
 
         internal static (string, string) TSplit(this string str, char splitCharacter)
         {
@@ -41,52 +57,56 @@ namespace RESTar.SQLite
             return (split[0], split.ElementAtOrDefault(1));
         }
 
-        internal static Schema GetSchema(this IResource resource)
-        {
-            var columns = new List<Column>();
-            SQLiteDbController.Query($"PRAGMA table_info({resource.GetSQLiteTableName()})", row =>
-            {
-                var columnName = row.GetString(1);
-                var columnType = row.GetString(2);
-                columns.Add(new Column(columnName, columnType.GetTypeCode()));
+        internal static string ToMethodsString(this IEnumerable<Method> ie) => string.Join(", ", ie);
 
-                //if (!uncheckedColumns.TryGetValue(columnName, out var correspondingColumn))
-                //    return;
-                //var foundType = correspondingColumn.Type.ToSQLType();
-                //if (!string.Equals(foundType, columnType, StringComparison.OrdinalIgnoreCase))
-                //{
-                //    throw new SQLiteException($"The underlying database schema for SQLite resource '{resource.Name}' has " +
-                //                              $"changed. Cannot convert column of SQLite type '{columnType}' to '{foundType}' " +
-                //                              $"in SQLite database table '{resource.GetSQLiteTableName()}'.");
-                //}
-                //uncheckedColumns.Remove(columnName);
-            });
-            return null;
+        internal static Method[] ToMethodsArray(this string methodsString)
+        {
+            if (methodsString == null) return null;
+            if (methodsString.Trim() == "*")
+                return new[] {GET, POST, PATCH, PUT, DELETE, REPORT, HEAD};
+            return methodsString.Split(',')
+                .Where(s => s != "")
+                .Select(s => (Method) Enum.Parse(typeof(Method), s))
+                .ToArray();
         }
 
-        internal static TypeCode ToCLRTypeCode(this string sqlTypeString)
+        internal static string Capitalize(this string input)
         {
-            switch (sqlTypeString.ToUpperInvariant())
+            var array = input.ToCharArray();
+            array[0] = char.ToUpper(array[0]);
+            return new string(array);
+        }
+
+        internal static bool EqualsNoCase(this string s1, string s2) => string.Equals(s1, s2, StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Gets the value of a key from an IDictionary, without case sensitivity, or null if the dictionary does 
+        /// not contain the key. The actual key is returned in the actualKey out parameter.
+        /// </summary>
+        internal static bool TryFindInDictionary<T>(this IDictionary<string, T> dict, string key, out string actualKey,
+            out T result)
+        {
+            result = default;
+            actualKey = null;
+            var matches = dict.Where(pair => pair.Key.EqualsNoCase(key)).ToList();
+            switch (matches.Count)
             {
-                case "SMALLINT": return TypeCode.Int16;
-                case "INT": return TypeCode.Int32;
-                case "BIGINT": return TypeCode.Int64;
-                case "SINGLE": return TypeCode.Single;
-                case "DOUBLE": return TypeCode.Double;
-                case "DECIMAL": return TypeCode.Decimal;
-                case "TINYINT": return TypeCode.Byte;
-                case "TEXT": return TypeCode.String;
-                case "BOOLEAN": return TypeCode.Boolean;
-                case "DATETIME": return TypeCode.DateTime;
-                case var other:
-                    throw new ArgumentException(
-                        $"Invalid SQL data type for column. SQL type '{other}' is not supported by RESTar.SQLite. " +
-                        $"Allowed values: {SQLiteDbController.AllowedSQLDataTypes}");
+                case 0: return false;
+                case 1:
+                    actualKey = matches[0].Key;
+                    result = matches[0].Value;
+                    return true;
+                default:
+                    if (!dict.TryGetValue(key, out result)) return false;
+                    actualKey = key;
+                    return true;
             }
         }
 
-        internal static TypeCode ValidateCLRTypeCode(this TypeCode typeCode)
+        internal static TypeCode ResolveCLRTypeCode(this Type type)
         {
+            if (type.IsNullable(out var t)) type = t;
+            var typeCode = Type.GetTypeCode(type);
             switch (typeCode)
             {
                 case TypeCode.Int16:
@@ -108,6 +128,8 @@ namespace RESTar.SQLite
 
         internal static string ToSQLTypeString(this Type type)
         {
+            if (type.IsNullable(out var t))
+                type = t;
             switch (Type.GetTypeCode(type))
             {
                 case TypeCode.Int16: return "SMALLINT";
@@ -120,70 +142,28 @@ namespace RESTar.SQLite
                 case TypeCode.String: return "TEXT";
                 case TypeCode.Boolean: return "BOOLEAN";
                 case TypeCode.DateTime: return "DATETIME";
-                case var _ when type.IsNullable(out var t): return t.ToSQLTypeString();
                 default: return null;
             }
         }
 
-        private static string MakeSQLValueLiteral(this object o)
+        internal static string ToSQLTypeString(this TypeCode type)
         {
-            switch (o)
+            switch (type)
             {
-                case null: return "NULL";
-                case true: return "1";
-                case false: return "0";
-
-                case char _:
-                case string _: return $"\'{o}\'";
-                case DateTime _: return $"DATETIME(\'{o:O}\')";
-                default: return $"{o}";
+                case TypeCode.Int16: return "SMALLINT";
+                case TypeCode.Int32: return "INT";
+                case TypeCode.Int64: return "BIGINT";
+                case TypeCode.Single: return "SINGLE";
+                case TypeCode.Double: return "DOUBLE";
+                case TypeCode.Decimal: return "DECIMAL";
+                case TypeCode.Byte: return "TINYINT";
+                case TypeCode.String: return "TEXT";
+                case TypeCode.Boolean: return "BOOLEAN";
+                case TypeCode.DateTime: return "DATETIME";
+                default: return null;
             }
         }
 
-        private static string GetSQLOperator(Operators op)
-        {
-            switch (op)
-            {
-                case EQUALS: return "=";
-                case NOT_EQUALS: return "<>";
-                case LESS_THAN: return "<";
-                case GREATER_THAN: return ">";
-                case LESS_THAN_OR_EQUALS: return "<=";
-                case GREATER_THAN_OR_EQUALS: return ">=";
-                default: throw new ArgumentOutOfRangeException(nameof(op), op, null);
-            }
-        }
-
-        internal static string ToSQLiteWhereClause<T>(this IEnumerable<Condition<T>> conditions) where T : class
-        {
-            var values = string.Join(" AND ", conditions.Where(c => !c.Skip).Select(c =>
-            {
-                var op = GetSQLOperator(c.Operator);
-                var key = c.Term.First.ActualName;
-                var valueLiteral = MakeSQLValueLiteral((object) c.Value);
-                if (valueLiteral == "NULL")
-                {
-                    switch (c.Operator)
-                    {
-                        case EQUALS:
-                            op = "IS";
-                            break;
-                        case NOT_EQUALS:
-                            op = "IS NOT";
-                            break;
-                        default: throw new SQLiteException($"Operator '{op}' is not valid for comparison with NULL");
-                    }
-                }
-                return $"{key.Fnuttify()} {op} {valueLiteral}";
-            }));
-            return string.IsNullOrWhiteSpace(values) ? null : "WHERE " + values;
-        }
-
-        internal static string ToSQLiteInsertValues<T>(this T entity) where T : SQLiteTable => string.Join(",",
-            typeof(T).GetColumns().Values.Select(c => MakeSQLValueLiteral((object) c.GetValue(entity))));
-
-        internal static string ToSQLiteUpdateSet<T>(this T entity) where T : SQLiteTable => string.Join(",",
-            typeof(T).GetColumns().Values.Select(c => $"{c.Name}={MakeSQLValueLiteral((object) c.GetValue(entity))}"));
 
         internal static bool HasAttribute<TAttribute>(this Type type, out TAttribute attribute)
             where TAttribute : Attribute

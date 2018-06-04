@@ -50,10 +50,10 @@ namespace RESTarTutorial
     [RESTar, SQLite]
     public class SQLiteResource : SQLiteTable
     {
-        [Column] public string STR { get; set; }
-        [Column] public int INT { get; set; }
-        [Column] public DateTime DATETIME { get; set; }
-        [Column] public decimal DECIMAL { get; set; }
+        public string STR { get; set; }
+        public int INT { get; set; }
+        public DateTime DATETIME { get; set; }
+        public decimal DECIMAL { get; set; }
 
         public int STRLength => STR.Length;
     }
@@ -61,10 +61,10 @@ namespace RESTarTutorial
     [SQLite]
     public class SQLiteResource2 : SQLiteTable
     {
-        [Column] public string STR { get; set; }
-        [Column] public int INT { get; set; }
-        [Column] public DateTime DATETIME { get; set; }
-        [Column] public decimal DECIMAL { get; set; }
+        public string STR { get; set; }
+        public int INT { get; set; }
+        public DateTime DATETIME { get; set; }
+        public decimal DECIMAL { get; set; }
 
         public int STRLength => STR.Length;
     }
@@ -102,9 +102,9 @@ namespace RESTarTutorial
     [SQLite(CustomTableName = "Heroes"), RESTar]
     public class Superhero : SQLiteTable
     {
-        [Column] public string Name { get; set; }
-        [Column] public string Id { get; set; }
-        [Column] public string Sex { get; set; }
-        [Column] public int Year { get; set; }
+        public string Name { get; set; }
+        public string Id { get; set; }
+        public string Sex { get; set; }
+        public int Year { get; set; }
     }
 }
