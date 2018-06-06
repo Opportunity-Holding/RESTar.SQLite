@@ -33,7 +33,7 @@ namespace RESTar.SQLite
         public static int Insert(T entity)
         {
             if (entity == default(T)) return 0;
-            return SQLiteDbController.Query($"INSERT INTO {TableMapping<T>.TableName} VALUES ({entity.ToSQLiteInsertValues()})");
+            return SQLiteDbController.Query($"INSERT INTO {TableMapping<T>.TableName} {entity.ToSQLiteInsertValues()}");
         }
 
         /// <summary>
@@ -44,10 +44,10 @@ namespace RESTar.SQLite
         {
             if (entities == null) return 0;
             var count = 0;
-            var sqlStub = $"INSERT INTO {TableMapping<T>.TableName} VALUES ";
+            var sqlStub = $"INSERT INTO {TableMapping<T>.TableName}";
             SQLiteDbController.Transact(command => entities.ForEach(entity =>
             {
-                command.CommandText = $"{sqlStub} ({entity.ToSQLiteInsertValues()})";
+                command.CommandText = $"{sqlStub} {entity.ToSQLiteInsertValues()}";
                 count += command.ExecuteNonQuery();
             }));
             return count;

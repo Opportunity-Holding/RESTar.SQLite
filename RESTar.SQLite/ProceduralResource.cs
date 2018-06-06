@@ -11,8 +11,7 @@ namespace RESTar.SQLite
     /// <summary>
     /// Creates and structures all the dynamic resources for this RESTar instance
     /// </summary>
-    [SQLite]
-    public class ProceduralResource : SQLiteTable, IProceduralEntityResource
+    public class ProceduralResource //: SQLiteTable, IProceduralEntityResource
     {
         private static IDictionary<string, Type> TypeCache { get; }
         static ProceduralResource() => TypeCache = new ConcurrentDictionary<string, Type>(StringComparer.OrdinalIgnoreCase);

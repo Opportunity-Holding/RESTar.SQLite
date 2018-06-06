@@ -12,7 +12,7 @@ namespace RESTar.SQLite.Meta
         /// <inheritdoc />
         public ColumnMappings(IEnumerable<ColumnMapping> collection) : base(collection) { }
 
-        internal string ToSQL() => string.Join(", ", this.Select(c => c.SQLColumn.ToSQL()));
+        internal string ToSQL() => string.Join(", ", this.Where(m => !m.IsRowId).Select(c => c.SQLColumn.ToSQL()));
         internal void Push() => ForEach(mapping => mapping.Push());
     }
 

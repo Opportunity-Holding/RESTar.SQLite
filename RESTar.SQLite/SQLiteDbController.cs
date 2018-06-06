@@ -9,14 +9,41 @@ using static RESTar.SQLite.TableMappingKind;
 
 namespace RESTar.SQLite
 {
+    public enum CLRDataType
+    {
+        Unsupported = 0,
+        Int16,
+        Int32,
+        Int64,
+        Single,
+        Double,
+        Decimal,
+        Byte,
+        String,
+        Boolean,
+        DateTime,
+    }
+
+    public enum SQLDataType
+    {
+        Unsupported = 0,
+        SMALLINT,
+        INT,
+        BIGINT,
+        SINGLE,
+        DOUBLE,
+        DECIMAL,
+        TINYINT,
+        TEXT,
+        BOOLEAN,
+        DATETIME
+    }
+
     /// <summary>
     /// The integration point between RESTar.SQLite and System.Data.SQLite
     /// </summary>
     internal static class SQLiteDbController
     {
-        internal const string AllowedCLRDataTypes = "Int16, Int32, Int64, Single, Double, Decimal, Byte, String, Boolean, DateTime";
-        internal const string AllowedSQLDataTypes = "SMALLINT, INT, BIGINT, SINGLE, DOUBLE, DECIMAL, TINYINT, TEXT, BOOLEAN, DATETIME";
-
         private static IDictionary<Type, string> TableBindings { get; }
 
         static SQLiteDbController()
@@ -30,9 +57,7 @@ namespace RESTar.SQLite
         internal static void Init()
         {
             if (IsInitiated) return;
-
             SetupDeclaredTypes();
-
             IsInitiated = true;
         }
 

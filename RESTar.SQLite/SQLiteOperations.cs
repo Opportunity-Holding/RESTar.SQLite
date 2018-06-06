@@ -16,7 +16,7 @@ namespace RESTar.SQLite
 
         private static bool IsSQLiteQueryable(ICondition condition)
         {
-            return condition.Term.Count == 1 && TableMapping<T>.ColumnNames.Contains(condition.Term.First.Name);
+            return condition.Term.Count == 1 && TableMapping<T>.SQLColumnNames.Contains(condition.Term.First.Name);
         }
 
         static SQLiteOperations()

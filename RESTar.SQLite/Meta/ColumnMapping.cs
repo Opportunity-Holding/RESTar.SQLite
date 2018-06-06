@@ -19,7 +19,18 @@ namespace RESTar.SQLite.Meta
         /// </summary>
         public SQLColumn SQLColumn { get; }
 
-        internal void Push() => SQLColumn.Push();
+        /// <summary>
+        /// Dows this column mapping refer to the RowId SQLite column?
+        /// </summary>
+        public bool IsRowId { get; }
+
+        internal void Push()
+        {
+            if (IsRowId) return;
+            SQLColumn.Push();
+        }
+
+        internal void Drop() => SQLColumn.Drop();
 
         /// <summary>
         /// Creates a column from a CLR PropertyInfo
@@ -29,6 +40,7 @@ namespace RESTar.SQLite.Meta
             TableMapping = tableMapping;
             CLRProperty = clrProperty;
             SQLColumn = sqlColumn;
+            IsRowId = sqlColumn.IsRowId;
             SQLColumn?.SetMapping(this);
             CLRProperty?.SetMapping(this);
         }

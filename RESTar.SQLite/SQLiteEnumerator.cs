@@ -10,7 +10,6 @@ namespace RESTar.SQLite
     internal class SQLiteEnumerator<T> : IEnumerator<T> where T : SQLiteTable
     {
         private static readonly Constructor<T> Constructor = typeof(T).MakeStaticConstructor<T>();
-        private ColumnMappings Mappings { get; }
         private SQLiteDataReader Reader { get; set; }
         private SQLiteConnection Connection { get; }
         private string SQL { get; }
@@ -33,7 +32,6 @@ namespace RESTar.SQLite
 
         internal SQLiteEnumerator(string sql)
         {
-            Mappings = TableMapping<T>.ColumnMappings;
             Connection = new SQLiteConnection(Settings.ConnectionString);
             Connection.Open();
             SQL = sql;
@@ -44,11 +42,13 @@ namespace RESTar.SQLite
         {
             var entity = Constructor();
             entity.RowId = Reader.GetInt64(0);
-            foreach (var column in Mappings)
+            foreach (var column in TableMapping<T>.TransactMappings)
             {
                 var value = Reader[column.SQLColumn.Name];
                 if (!(value is DBNull))
-                    column.CLRProperty.Set(entity, value);
+                    column.CLRProperty.Set?.Invoke(entity, value);
+                else if (!column.CLRProperty.IsDeclared)
+                    column.CLRProperty.Set?.Invoke(entity, null);
             }
             return entity;
         }

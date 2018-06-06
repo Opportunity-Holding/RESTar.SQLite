@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using RESTar.Linq;
 using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Resources.Operations;
+using RESTar.Resources.Templates;
 using RESTar.SQLite;
 using static RESTar.Method;
 
@@ -26,7 +28,7 @@ namespace RESTarTutorial
                 uri: "/api",
                 requireApiKey: true,
                 configFilePath: projectFolder + "/Config.xml",
-                entityResourceProviders: new[] {new SQLiteProvider(projectFolder, "data")}
+                entityResourceProviders: new[] {new SQLiteProvider(projectFolder, "data2")}
             );
 
             // The 'port' argument sets the HTTP port on which to register the REST handlers
@@ -68,7 +70,7 @@ namespace RESTarTutorial
 
         public int STRLength => STR.Length;
     }
-    
+
     [RESTar(GET)]
     public class SuperheroReport : ISelector<SuperheroReport>
     {
@@ -105,6 +107,51 @@ namespace RESTarTutorial
         public string Name { get; set; }
         public string Id { get; set; }
         public string Sex { get; set; }
+
+        [SQLiteMember(columnName: "YearIntroduced")]
         public int Year { get; set; }
+    }
+
+    [SQLite, RESTar]
+    public class MyElastic : ElasticSQLiteTable
+    {
+        public string Name { get; set; }
+        public int Id { get; set; }
+    }
+
+    [RESTar(GET, PATCH)]
+    public class MyElasticSQLiteController : ElasticSQLiteTableController<MyElastic>, ISelector<MyElasticSQLiteController>,
+        IUpdater<MyElasticSQLiteController>
+    {
+        public IEnumerable<MyElasticSQLiteController> Select(IRequest<MyElasticSQLiteController> request)
+        {
+            return Select<MyElasticSQLiteController>().Where(request.Conditions);
+        }
+
+        public int Update(IRequest<MyElasticSQLiteController> request)
+        {
+            return request.GetInputEntities().Count(entity =>
+            {
+                return entity.Update();
+            });
+        }
+
+        [RESTar]
+        public class Dropper : OptionsTerminal
+        {
+            protected override IEnumerable<Option> GetOptions()
+            {
+                return new[]
+                {
+                    new Option("drop", "Drops a given column", args =>
+                    {
+                        var tableName = args[0];
+                        var columnName = args[1];
+                        var item = Select<MyElasticSQLiteController>().First();
+                        item.DropColumn(columnName);
+                    })
+                };
+            }
+        }
     }
 }

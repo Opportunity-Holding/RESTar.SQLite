@@ -1,6 +1,6 @@
-﻿using System;
-using System.Reflection;
+﻿using System.Reflection;
 using RESTar.Meta;
+using RESTar.Resources;
 
 namespace RESTar.SQLite.Meta
 {
@@ -19,7 +19,7 @@ namespace RESTar.SQLite.Meta
         /// <summary>
         /// The type of the CLR property, defined as a TypeCode
         /// </summary>
-        public TypeCode Type { get; }
+        public CLRDataType Type { get; }
 
         /// <summary>
         /// Is this CLR property declared, or was it defined at runtime?
@@ -27,14 +27,19 @@ namespace RESTar.SQLite.Meta
         public bool IsDeclared { get; }
 
         /// <summary>
+        /// Is this CLR property ignored when materializing entities from SQL?
+        /// </summary>
+        public bool IsIgnored { get; private set; }
+
+        /// <summary>
         /// The getter for the property value
         /// </summary>
-        public Getter Get { get; }
+        [RESTarMember(ignore: true)] public Getter Get { get; }
 
         /// <summary>
         /// The setter for the property value
         /// </summary>
-        public Setter Set { get; }
+        [RESTarMember(ignore: true)] public Setter Set { get; }
 
         /// <summary>
         /// The optional SQLiteMemberAttribute associated with this CLR property
@@ -44,6 +49,9 @@ namespace RESTar.SQLite.Meta
         internal void SetMapping(ColumnMapping mapping)
         {
             Mapping = mapping;
+            IsIgnored = Type == CLRDataType.Unsupported
+                        || Name == "RowId"
+                        || mapping.TableMapping.TableMappingKind == TableMappingKind.StaticDeclared && !IsDeclared;
         }
 
         /// <summary>
@@ -63,15 +71,13 @@ namespace RESTar.SQLite.Meta
         /// <summary>
         /// From SQL
         /// </summary>
-        public CLRProperty(string name, TypeCode typeCode)
+        public CLRProperty(string name, CLRDataType typeCode)
         {
             Name = name;
             Type = typeCode;
-            IsDeclared = false;
-            if (Type == TypeCode.Empty) return;
             Get = obj =>
             {
-                if (obj is IDynamicMemberValueProvider dm && dm.TryGetValue(Name, out var actualKey, out var value))
+                if (obj is IDynamicMemberValueProvider dm && dm.TryGetValue(Name, out var value, out var actualKey))
                 {
                     Name = actualKey;
                     return value;
@@ -79,6 +85,7 @@ namespace RESTar.SQLite.Meta
                 return null;
             };
             Set = (obj, value) => (obj as IDynamicMemberValueProvider)?.TrySetValue(Name, value);
+            IsDeclared = false;
         }
     }
 }

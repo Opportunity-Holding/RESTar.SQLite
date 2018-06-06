@@ -4,6 +4,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using RESTar.Linq;
+using RESTar.Meta;
+using RESTar.Requests;
+using RESTar.Resources;
+using RESTar.Resources.Operations;
+using RESTar.Resources.Templates;
 
 namespace RESTar.SQLite.Meta
 {
@@ -30,16 +35,20 @@ namespace RESTar.SQLite.Meta
         /// </summary>
         public static ColumnMappings ColumnMappings => Get.ColumnMappings;
 
+        public static IEnumerable<ColumnMapping> TransactMappings => Get.TransactMappings;
+
         /// <summary>
         /// Gets the column names from the table mapping for the given type
         /// </summary>
-        public static HashSet<string> ColumnNames => mapping.ColumnNames;
+        internal static HashSet<string> SQLColumnNames => mapping.SQLColumnNames;
     }
 
+    /// <inheritdoc />
     /// <summary>
     /// Represents a mapping between a CLR class and an SQLite table
     /// </summary>
-    public class TableMapping
+    [RESTar(Method.GET)]
+    public class TableMapping : ISelector<TableMapping>
     {
         #region Static
 
@@ -53,6 +62,8 @@ namespace RESTar.SQLite.Meta
         /// <param name="type"></param>
         /// <returns></returns>
         public static TableMapping Get(Type type) => TableMappingByType.SafeGet(type);
+
+        internal static IEnumerable<TableMapping> All => TableMappingByType.Values;
 
         #endregion
 
@@ -77,11 +88,44 @@ namespace RESTar.SQLite.Meta
         public ColumnMappings ColumnMappings { get; private set; }
 
         /// <summary>
+        /// The RESTar resource instance, if any, corresponding to this mapping
+        /// </summary>
+        public IEntityResource Resource { get; internal set; }
+
+        public IEnumerable<ColumnMapping> TransactMappings { get; private set; }
+
+        /// <summary>
         /// The names of the mapped columns of this table mapping
         /// </summary>
-        public HashSet<string> ColumnNames { get; private set; }
+        internal HashSet<string> SQLColumnNames { get; private set; }
 
-        private HashSet<string> GetMakeColumnNames() => new HashSet<string>(
+        /// <summary>
+        /// Does this table mapping have a corresponding SQL table?
+        /// </summary>
+        public bool Exists
+        {
+            get
+            {
+                var results = 0;
+                SQLiteDbController.Query($"PRAGMA table_info({TableName})", rowAction: row => results += 1);
+                return results > 0;
+            }
+        }
+
+        /// <inheritdoc />
+        public IEnumerable<TableMapping> Select(IRequest<TableMapping> request)
+        {
+            return TableMappingByType.Values.Where(request.Conditions);
+        }
+
+        [RESTar]
+        public class Options : OptionsTerminal
+        {
+            protected override IEnumerable<Option> GetOptions() => new[]
+                {new Option("update", "Updates all table mappings", _ => TableMappingByType.Values.ForEach(m => m.Update()))};
+        }
+
+        private HashSet<string> MakeColumnNames() => new HashSet<string>(
             ColumnMappings.Select(c => c.SQLColumn.Name), StringComparer.OrdinalIgnoreCase);
 
         private void DropTable()
@@ -90,8 +134,6 @@ namespace RESTar.SQLite.Meta
             RemoveTable(this);
         }
 
-        private bool Exists => SQLiteDbController.Query($"PRAGMA table_info({TableName})") > 0;
-
         /// <summary>
         /// Gets the SQL columns of the mapped SQL table
         /// </summary>
@@ -99,24 +141,28 @@ namespace RESTar.SQLite.Meta
         public List<SQLColumn> GetSQLColumns()
         {
             var columns = new List<SQLColumn>();
-            SQLiteDbController.Query($"PRAGMA table_info({TableName})", row => columns.Add(new SQLColumn(row.GetString(1), row.GetString(2))));
+            SQLiteDbController.Query($"PRAGMA table_info({TableName})",
+                row => columns.Add(new SQLColumn(row.GetString(1), row.GetString(2).ParseSQLDataType())));
             return columns;
         }
 
-        private void Update()
+        internal void ReloadColumnNames() => SQLColumnNames = MakeColumnNames();
+
+        internal void Update()
         {
             ColumnMappings = GetDeclaredColumnMappings();
             ColumnMappings.Push();
-            var columnNames = GetMakeColumnNames();
+            var columnNames = MakeColumnNames();
             GetSQLColumns()
                 .Where(column => !columnNames.Contains(column.Name))
                 .ForEach(column => ColumnMappings.Add(new ColumnMapping
                 (
                     tableMapping: this,
-                    clrProperty: new CLRProperty(column.Name, column.Type.ToCLRTypeCode(true)),
+                    clrProperty: new CLRProperty(column.Name, column.Type.ToCLRTypeCode()),
                     sqlColumn: column
                 )));
-            ColumnNames = GetMakeColumnNames();
+            ReloadColumnNames();
+            TransactMappings = ColumnMappings.Where(mapping => !mapping.CLRProperty.IsIgnored).ToArray();
         }
 
         private ColumnMappings GetDeclaredColumnMappings() => CLRClass
@@ -129,10 +175,12 @@ namespace RESTar.SQLite.Meta
                 sqlColumn: new SQLColumn
                 (
                     name: property.MemberAttribute?.ColumnName ?? property.Name,
-                    type: property.Type.ToSQLTypeString()
+                    type: property.Type.ToSQLDataType()
                 )
             ))
             .ToColumnMappings();
+
+        internal string GetCreateTableSQL() => $"CREATE TABLE {TableName} ({(ColumnMappings ?? GetDeclaredColumnMappings()).ToSQL()});";
 
         /// <summary>
         /// Creates a new table mapping, mapping a CLR class to an SQL table
@@ -144,7 +192,7 @@ namespace RESTar.SQLite.Meta
             TableName = clrClass.GetCustomAttribute<SQLiteAttribute>()?.CustomTableName ?? clrClass.FullName?.Replace('.', '$')
                         ?? throw new SQLiteException("RESTar.SQLite encountered an unknown CLR class when creating table mappings");
             TableMappingByType[CLRClass] = this;
-            if (!Exists) SQLiteDbController.Query($"CREATE TABLE {TableName} ({GetDeclaredColumnMappings().ToSQL()})");
+            if (!Exists) SQLiteDbController.Query(GetCreateTableSQL());
             Update();
         }
     }

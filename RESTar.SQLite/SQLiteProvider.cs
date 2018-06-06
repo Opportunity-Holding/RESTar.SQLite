@@ -23,10 +23,8 @@ namespace RESTar.SQLite
     /// mapping and query building is done by RESTar. Use the DatabaseIndex resource to register indexes 
     /// for SQLite resources (just like you would for Starcounter resources).
     /// </summary>
-    public class SQLiteProvider : EntityResourceProvider<SQLiteTable>, IProceduralEntityResourceProvider
+    public class SQLiteProvider : EntityResourceProvider<SQLiteTable> //, IProceduralEntityResourceProvider
     {
-        static SQLiteProvider() => SQLiteDbController.Init();
-
         /// <inheritdoc />
         protected override bool IsValid(IEntityResource resource, out string reason)
         {
@@ -70,13 +68,20 @@ namespace RESTar.SQLite
                 };
             });
             DatabaseIndexer = new SQLiteIndexer();
+            SQLiteDbController.Init();
         }
 
         /// <inheritdoc />
-        public override void ReceiveClaimed(ICollection<IEntityResource> claimedResources) => claimedResources
-            .Where(c => TableMapping.Get(c.Type) == null)
-            .ForEach(c => throw new SQLiteException($"A resource '{c}' was claimed by the SQLite resource provider, but had " +
-                                                    "no existing table mapping"));
+        public override void ReceiveClaimed(ICollection<IEntityResource> claimedResources)
+        {
+            foreach (var claimed in claimedResources)
+            {
+                var tableMapping = TableMapping.Get(claimed.Type) ?? throw new SQLiteException(
+                                       $"A resource '{claimed}' was claimed by the SQLite resource provider, " +
+                                       "but had no existing table mapping");
+                tableMapping.Resource = claimed;
+            }
+        }
 
         /// <inheritdoc />
         protected override Type AttributeType => typeof(SQLiteAttribute);
