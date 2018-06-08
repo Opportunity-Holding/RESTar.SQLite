@@ -51,7 +51,7 @@ namespace RESTar.SQLite.Meta
             Mapping = mapping;
             IsIgnored = Type == CLRDataType.Unsupported
                         || Name == "RowId"
-                        || mapping.TableMapping.TableMappingKind == TableMappingKind.StaticDeclared && !IsDeclared;
+                        || mapping.TableMapping.TableMappingKind == TableMappingKind.Static && !IsDeclared;
         }
 
         /// <summary>

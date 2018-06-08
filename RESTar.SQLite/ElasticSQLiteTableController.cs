@@ -6,7 +6,7 @@ namespace RESTar.SQLite
 {
     public class ElasticSQLiteTableController<T> where T : ElasticSQLiteTable
     {
-        private TableMapping Mapping { get; set; }
+        private TableMapping TableMapping { get; set; }
         public string CLRTypeName { get; private set; }
         public string SQLTableName { get; private set; }
         public Dictionary<string, CLRDataType> Columns { get; private set; }
@@ -17,7 +17,7 @@ namespace RESTar.SQLite
             .Where(mapping => typeof(T).IsAssignableFrom(mapping.CLRClass))
             .Select(mapping => new TDerived
             {
-                Mapping = mapping,
+                TableMapping = mapping,
                 CLRTypeName = mapping.CLRClass.FullName,
                 SQLTableName = mapping.TableName,
                 Columns = mapping.ColumnMappings.ToDictionary(
@@ -27,15 +27,15 @@ namespace RESTar.SQLite
 
         protected bool DropColumn(string columnName)
         {
-            var columnMapping = Mapping.ColumnMappings.FirstOrDefault(cm => cm.CLRProperty.Name.EqualsNoCase(columnName));
+            var columnMapping = TableMapping.ColumnMappings.FirstOrDefault(cm => cm.CLRProperty.Name.EqualsNoCase(columnName));
             if (columnMapping == null) return false;
             if (columnMapping.IsRowId || columnMapping.CLRProperty.IsDeclared)
-                throw new SQLiteException($"Cannot drop column '{columnMapping.SQLColumn.Name}' from table '{Mapping.TableName}'. " +
+                throw new SQLiteException($"Cannot drop column '{columnMapping.SQLColumn.Name}' from table '{TableMapping.TableName}'. " +
                                           "Column is not editable.");
-            Mapping.ColumnMappings.Remove(columnMapping);
-            Mapping.ReloadColumnNames();
+            TableMapping.ColumnMappings.Remove(columnMapping);
+            TableMapping.ReloadColumnNames();
             columnMapping.Drop();
-            Mapping.Update();
+            TableMapping.Update();
             return true;
         }
 
@@ -43,17 +43,20 @@ namespace RESTar.SQLite
         {
             var updated = false;
             var columnsToAdd = Columns.Keys
-                .Except(Mapping.SQLColumnNames)
+                .Except(TableMapping.SQLColumnNames)
                 .Select(name => (name, type: Columns[name]));
             foreach (var (name, type) in columnsToAdd.Where(c => c.type != CLRDataType.Unsupported))
             {
-                var clrProperty = new CLRProperty(name, type);
-                var sqlColumn = new SQLColumn(name, type.ToSQLDataType());
-                Mapping.ColumnMappings.Add(new ColumnMapping(Mapping, clrProperty, sqlColumn));
+                TableMapping.ColumnMappings.Add(new ColumnMapping
+                (
+                    tableMapping: TableMapping,
+                    clrProperty: new CLRProperty(name, type),
+                    sqlColumn: new SQLColumn(name, type.ToSQLDataType())
+                ));
                 updated = true;
             }
-            Mapping.ColumnMappings.Push();
-            Mapping.Update();
+            TableMapping.ColumnMappings.Push();
+            TableMapping.Update();
             return updated;
         }
     }

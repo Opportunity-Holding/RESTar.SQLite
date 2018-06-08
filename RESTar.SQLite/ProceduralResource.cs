@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
 using RESTar.Resources;
 
 namespace RESTar.SQLite
@@ -11,10 +8,14 @@ namespace RESTar.SQLite
     /// <summary>
     /// Creates and structures all the dynamic resources for this RESTar instance
     /// </summary>
-    public class ProceduralResource //: SQLiteTable, IProceduralEntityResource
+    [SQLite]
+    public class ProceduralResource : SQLiteTable, IProceduralEntityResource
     {
-        private static IDictionary<string, Type> TypeCache { get; }
-        static ProceduralResource() => TypeCache = new ConcurrentDictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
+        /// <inheritdoc />
+        /// <summary>
+        /// The name of this resource
+        /// </summary>
+        public string Name { get; set; }
 
         /// <inheritdoc />
         /// <summary>
@@ -28,12 +29,6 @@ namespace RESTar.SQLite
 
         /// <inheritdoc />
         /// <summary>
-        /// The name of this resource
-        /// </summary>
-        public string Name { get; internal set; }
-
-        /// <inheritdoc />
-        /// <summary>
         /// The description for this resource
         /// </summary>
         public string Description { get; set; }
@@ -41,28 +36,19 @@ namespace RESTar.SQLite
         /// <summary>
         /// The name of the dynamic table (used internally)
         /// </summary>
-        public string TableName { get; internal set; }
+        public string TableName { get; set; }
 
         /// <summary>
         /// The name of the base type to generate the CLR type from
         /// </summary>
-        public string BaseTypeName { get; internal set; }
+        public string BaseTypeName { get; set; }
 
         /// <summary>
         /// A string representation of the available REST methods
         /// </summary>
-        [RESTarMember(ignore: true)] public string AvailableMethodsString { get; internal set; }
+        [RESTarMember(ignore: true)] public string AvailableMethodsString { get; set; }
 
         /// <inheritdoc />
-        public Type Type { get; internal set; }
-
-        internal ProceduralResource(string name, string tableName, Type baseType, IEnumerable<Method> availableMethods, string description = null)
-        {
-            Name = name;
-            TableName = tableName;
-            Description = description;
-            BaseTypeName = baseType.FullName;
-            Methods = availableMethods.ToArray();
-        }
+        public Type Type => TypeBuilder.GetType(this);
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.SQLite;
 using System.Linq;
@@ -7,6 +8,60 @@ using RESTar.SQLite.Meta;
 
 namespace RESTar.SQLite
 {
+    public class Db
+    {
+        internal static int Query(string sql)
+        {
+            var res = 0;
+            Query(sql, command => res = command.ExecuteNonQuery());
+            return res;
+        }
+
+        private static void Query(string sql, Action<SQLiteCommand> action)
+        {
+            using (var connection = new SQLiteConnection(Settings.ConnectionString))
+            {
+                connection.Open();
+                action(new SQLiteCommand(sql, connection) { CommandType = CommandType.Text });
+            }
+        }
+
+        internal static void Query(string sql, Action<SQLiteDataReader> rowAction)
+        {
+            using (var connection = new SQLiteConnection(Settings.ConnectionString))
+            {
+                connection.Open();
+                var command = new SQLiteCommand(sql, connection) { CommandType = CommandType.Text };
+                using (var reader = command.ExecuteReader())
+                    while (reader.Read())
+                        rowAction(reader);
+            }
+        }
+
+        internal static void Transact(Action<SQLiteCommand> commandAction)
+        {
+            using (var connection = new SQLiteConnection(Settings.ConnectionString))
+            {
+                connection.Open();
+                using (var command = new SQLiteCommand(connection) { CommandType = CommandType.Text })
+                {
+                    using (var transaction = connection.BeginTransaction())
+                    {
+                        try
+                        {
+                            commandAction(command);
+                            transaction.Commit();
+                        }
+                        catch
+                        {
+                            transaction.Rollback();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     /// <summary>
     /// Helper class for accessing RESTar.SQLite tables
     /// </summary>
@@ -33,7 +88,7 @@ namespace RESTar.SQLite
         public static int Insert(T entity)
         {
             if (entity == default(T)) return 0;
-            return SQLiteDbController.Query($"INSERT INTO {TableMapping<T>.TableName} {entity.ToSQLiteInsertValues()}");
+            return Db.Query($"INSERT INTO {TableMapping<T>.TableName} {entity.ToSQLiteInsertValues()}");
         }
 
         /// <summary>
@@ -45,7 +100,7 @@ namespace RESTar.SQLite
             if (entities == null) return 0;
             var count = 0;
             var sqlStub = $"INSERT INTO {TableMapping<T>.TableName}";
-            SQLiteDbController.Transact(command => entities.ForEach(entity =>
+            Db.Transact(command => entities.ForEach(entity =>
             {
                 command.CommandText = $"{sqlStub} {entity.ToSQLiteInsertValues()}";
                 count += command.ExecuteNonQuery();
@@ -60,7 +115,7 @@ namespace RESTar.SQLite
         public static int Update(T updatedEntity)
         {
             if (updatedEntity == default(T)) return 0;
-            return SQLiteDbController.Query($"UPDATE {TableMapping<T>.TableName} SET {updatedEntity.ToSQLiteUpdateSet()} " +
+            return Db.Query($"UPDATE {TableMapping<T>.TableName} SET {updatedEntity.ToSQLiteUpdateSet()} " +
                                             $"WHERE RowId={updatedEntity.RowId}");
         }
 
@@ -73,7 +128,7 @@ namespace RESTar.SQLite
             if (updatedEntities == null) return 0;
             var count = 0;
             var sqlStub = $"UPDATE {TableMapping<T>.TableName} SET ";
-            SQLiteDbController.Transact(command => updatedEntities.ForEach(updatedEntity =>
+            Db.Transact(command => updatedEntities.ForEach(updatedEntity =>
             {
                 command.CommandText = $"{sqlStub} {updatedEntity.ToSQLiteUpdateSet()} WHERE RowId={updatedEntity.RowId}";
                 count += command.ExecuteNonQuery();
@@ -88,7 +143,7 @@ namespace RESTar.SQLite
         public static int Delete(T entity)
         {
             if (entity == default(T)) return 0;
-            return SQLiteDbController.Query($"DELETE FROM {TableMapping<T>.TableName} WHERE RowId={entity.RowId}"
+            return Db.Query($"DELETE FROM {TableMapping<T>.TableName} WHERE RowId={entity.RowId}"
             );
         }
 
@@ -103,7 +158,7 @@ namespace RESTar.SQLite
             if (entities == null) return 0;
             var sqlstub = $"DELETE FROM {TableMapping<T>.TableName} WHERE RowId=";
             var count = 0;
-            SQLiteDbController.Transact(command => entities.ForEach(entity =>
+            Db.Transact(command => entities.ForEach(entity =>
             {
                 command.CommandText = sqlstub + entity.RowId;
                 count += command.ExecuteNonQuery();

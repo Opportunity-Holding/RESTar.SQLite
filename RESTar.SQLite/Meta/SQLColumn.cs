@@ -4,7 +4,6 @@ using System.Linq;
 using RESTar.Admin;
 using RESTar.Requests;
 using static System.StringComparison;
-using static RESTar.SQLite.SQLiteDbController;
 
 namespace RESTar.SQLite.Meta
 {
@@ -55,7 +54,7 @@ namespace RESTar.SQLite.Meta
                     throw new SQLiteException($"Cannot push column '{Name}' to SQLite table '{Mapping.TableMapping.TableName}'. " +
                                               $"The table already contained a column definition '({column.ToSQL()})'.");
             }
-            Query($"ALTER TABLE {Mapping.TableMapping.TableName} ADD COLUMN {ToSQL()}");
+            Db.Query($"ALTER TABLE {Mapping.TableMapping.TableName} ADD COLUMN {ToSQL()}");
         }
 
         internal void Drop()
@@ -83,15 +82,15 @@ namespace RESTar.SQLite.Meta
                 op: Operators.EQUALS,
                 value: Mapping.TableMapping.Resource.Name
             ));
-            var indexes = indexRequest
+            var tableIndexesToKeep = indexRequest
                 .EvaluateToEntities()
                 .Where(index => !index.Columns.Any(column => column.Name.EqualsNoCase(Name)))
                 .ToList();
 
-            Query(query);
+            Db.Query(query);
 
             indexRequest.Method = Method.POST;
-            indexRequest.Selector = () => indexes;
+            indexRequest.Selector = () => tableIndexesToKeep;
             indexRequest.Evaluate().ThrowIfError();
         }
 

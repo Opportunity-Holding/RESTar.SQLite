@@ -123,18 +123,11 @@ namespace RESTarTutorial
     public class MyElasticSQLiteController : ElasticSQLiteTableController<MyElastic>, ISelector<MyElasticSQLiteController>,
         IUpdater<MyElasticSQLiteController>
     {
-        public IEnumerable<MyElasticSQLiteController> Select(IRequest<MyElasticSQLiteController> request)
-        {
-            return Select<MyElasticSQLiteController>().Where(request.Conditions);
-        }
+        public IEnumerable<MyElasticSQLiteController> Select(IRequest<MyElasticSQLiteController> request) =>
+            Select<MyElasticSQLiteController>().Where(request.Conditions);
 
-        public int Update(IRequest<MyElasticSQLiteController> request)
-        {
-            return request.GetInputEntities().Count(entity =>
-            {
-                return entity.Update();
-            });
-        }
+        public int Update(IRequest<MyElasticSQLiteController> request) =>
+            request.GetInputEntities().Count(entity => entity.Update());
 
         [RESTar]
         public class Dropper : OptionsTerminal
@@ -154,4 +147,16 @@ namespace RESTarTutorial
             }
         }
     }
+
+    [RESTar]
+    public class Event : ResourceController<Event, SQLiteProvider>
+    {
+        protected override dynamic Data { get; } = new EventData();
+    }
+
+    public class EventData
+    {
+        public string BaseTypeName = typeof(MyElastic).AssemblyQualifiedName;
+    }
+
 }

@@ -9,6 +9,7 @@ using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Resources.Operations;
 using RESTar.Resources.Templates;
+using static RESTar.SQLite.TableMappingKind;
 
 namespace RESTar.SQLite.Meta
 {
@@ -68,19 +69,29 @@ namespace RESTar.SQLite.Meta
         #endregion
 
         /// <summary>
-        /// The kind of this table mapping
-        /// </summary>
-        public TableMappingKind TableMappingKind { get; }
-
-        /// <summary>
         /// The CLR class of the mapping
         /// </summary>
-        public Type CLRClass { get; }
+        [RESTarMember(ignore: true)] public Type CLRClass { get; }
+
+        /// <summary>
+        /// The name of the CLR class of the mapping
+        /// </summary>
+        public string ClassName => CLRClass.FullName;
 
         /// <summary>
         /// The name of the mapped SQLite table
         /// </summary>
         public string TableName { get; }
+
+        /// <summary>
+        /// The kind of this table mapping
+        /// </summary>
+        public TableMappingKind TableMappingKind { get; }
+
+        /// <summary>
+        /// Is this table mapping declared, as opposed to procedural?
+        /// </summary>
+        public bool IsDeclared { get; }
 
         /// <summary>
         /// The column mappings of this table mapping
@@ -90,9 +101,9 @@ namespace RESTar.SQLite.Meta
         /// <summary>
         /// The RESTar resource instance, if any, corresponding to this mapping
         /// </summary>
-        public IEntityResource Resource { get; internal set; }
+        internal IEntityResource Resource { get; set; }
 
-        public IEnumerable<ColumnMapping> TransactMappings { get; private set; }
+        internal IEnumerable<ColumnMapping> TransactMappings { get; private set; }
 
         /// <summary>
         /// The names of the mapped columns of this table mapping
@@ -107,7 +118,7 @@ namespace RESTar.SQLite.Meta
             get
             {
                 var results = 0;
-                SQLiteDbController.Query($"PRAGMA table_info({TableName})", rowAction: row => results += 1);
+                Db.Query($"PRAGMA table_info({TableName})", rowAction: row => results += 1);
                 return results > 0;
             }
         }
@@ -130,7 +141,7 @@ namespace RESTar.SQLite.Meta
 
         private void DropTable()
         {
-            SQLiteDbController.Query($"DROP TABLE IF EXISTS {TableName}");
+            Db.Query($"DROP TABLE IF EXISTS {TableName}");
             RemoveTable(this);
         }
 
@@ -141,8 +152,7 @@ namespace RESTar.SQLite.Meta
         public List<SQLColumn> GetSQLColumns()
         {
             var columns = new List<SQLColumn>();
-            SQLiteDbController.Query($"PRAGMA table_info({TableName})",
-                row => columns.Add(new SQLColumn(row.GetString(1), row.GetString(2).ParseSQLDataType())));
+            Db.Query($"PRAGMA table_info({TableName})", row => columns.Add(new SQLColumn(row.GetString(1), row.GetString(2).ParseSQLDataType())));
             return columns;
         }
 
@@ -165,6 +175,8 @@ namespace RESTar.SQLite.Meta
             TransactMappings = ColumnMappings.Where(mapping => !mapping.CLRProperty.IsIgnored).ToArray();
         }
 
+        private void Drop() => Db.Query($"DROP TABLE {TableName};");
+
         private ColumnMappings GetDeclaredColumnMappings() => CLRClass
             .GetDeclaredColumnProperties()
             .Values
@@ -182,18 +194,60 @@ namespace RESTar.SQLite.Meta
 
         internal string GetCreateTableSQL() => $"CREATE TABLE {TableName} ({(ColumnMappings ?? GetDeclaredColumnMappings()).ToSQL()});";
 
+        internal static void Create(Type clrClass) => new TableMapping(clrClass);
+
+        internal static bool Drop(Type clrClass)
+        {
+            switch (Get(clrClass))
+            {
+                case null: return false;
+                case var declared when declared.IsDeclared: return false;
+                case var procedural:
+                    procedural.Drop();
+                    TableMappingByType.Remove(clrClass);
+                    return true;
+            }
+        }
+
         /// <summary>
         /// Creates a new table mapping, mapping a CLR class to an SQL table
         /// </summary>
-        internal TableMapping(Type clrClass, TableMappingKind tableMappingKind)
+        private TableMapping(Type clrClass)
         {
-            TableMappingKind = tableMappingKind;
+            Validate(clrClass);
+            TableMappingKind = clrClass.IsSubclassOf(typeof(ElasticSQLiteTable)) ? Elastic : Static;
+            IsDeclared = !clrClass.Assembly.Equals(TypeBuilder.Assembly);
             CLRClass = clrClass;
             TableName = clrClass.GetCustomAttribute<SQLiteAttribute>()?.CustomTableName ?? clrClass.FullName?.Replace('.', '$')
                         ?? throw new SQLiteException("RESTar.SQLite encountered an unknown CLR class when creating table mappings");
             TableMappingByType[CLRClass] = this;
-            if (!Exists) SQLiteDbController.Query(GetCreateTableSQL());
+            if (!Exists) Db.Query(GetCreateTableSQL());
             Update();
+        }
+
+        private static void Validate(Type type)
+        {
+            if (type.FullName == null)
+                throw new SQLiteException($"RESTar.SQLite encountered an unknown type: '{type.GUID}'");
+            if (type.Namespace == null)
+                throw new SQLiteException($"RESTar.SQLite encountered a type '{type}' with no specified namespace.");
+            if ((type.FullName.StartsWith("RESTar.", StringComparison.OrdinalIgnoreCase) ||
+                 type.Namespace.StartsWith("RESTar.", StringComparison.OrdinalIgnoreCase))
+                && !type.Assembly.Equals(typeof(TableMapping).Assembly)
+                && !type.Assembly.Equals(TypeBuilder.Assembly))
+                throw new SQLiteException($"RESTar.SQLite encountered a type '{type}' with an invalid name or namespace. Must not " +
+                                          "start with 'RESTar'");
+            if (type.IsGenericType)
+                throw new SQLiteException($"Invalid SQLite table mapping for CLR class '{type}'. Cannot map a " +
+                                          "generic CLR class.");
+
+            if (type.GetConstructor(Type.EmptyTypes) == null)
+                throw new SQLiteException($"Expected parameterless constructor for SQLite type '{type}'.");
+            var columnProperties = type.GetDeclaredColumnProperties();
+            if (columnProperties.Values.All(p => p.Name == "RowId"))
+                throw new SQLiteException(
+                    $"No public auto-implemented instance properties found in type '{type}'. SQLite does not support empty tables, " +
+                    "so each SQLiteTable must define at least one public auto-implemented instance property.");
         }
     }
 }
