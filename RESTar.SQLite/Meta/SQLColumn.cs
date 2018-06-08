@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using RESTar.Admin;
-using RESTar.Requests;
 using static System.StringComparison;
 
 namespace RESTar.SQLite.Meta
@@ -55,43 +51,6 @@ namespace RESTar.SQLite.Meta
                                               $"The table already contained a column definition '({column.ToSQL()})'.");
             }
             Db.Query($"ALTER TABLE {Mapping.TableMapping.TableName} ADD COLUMN {ToSQL()}");
-        }
-
-        internal void Drop()
-        {
-            if (Mapping == null)
-                throw new InvalidOperationException($"Cannot drop the unmapped SQL column '{Name}' from the database");
-            var columnNames = new HashSet<string>(Mapping.TableMapping.SQLColumnNames);
-            columnNames.Remove("rowid");
-            var columnsSQL = string.Join(", ", columnNames);
-            var tempName = $"__{Mapping.TableMapping.TableName}__RESTAR_TEMP";
-            var query = "PRAGMA foreign_keys=off;" +
-                        "BEGIN TRANSACTION;" +
-                        $"ALTER TABLE {Mapping.TableMapping.TableName} RENAME TO {tempName};" +
-                        $"{Mapping.TableMapping.GetCreateTableSQL()}" +
-                        $"INSERT INTO {Mapping.TableMapping.TableName} ({columnsSQL})" +
-                        $"  SELECT {columnsSQL}" +
-                        $"  FROM {tempName};" +
-                        $"DROP TABLE {tempName};" +
-                        "COMMIT;" +
-                        "PRAGMA foreign_keys=on;";
-            var indexRequest = Context.Root.CreateRequest<DatabaseIndex>();
-            indexRequest.Conditions.Add(new Condition<DatabaseIndex>
-            (
-                key: nameof(DatabaseIndex.ResourceName),
-                op: Operators.EQUALS,
-                value: Mapping.TableMapping.Resource.Name
-            ));
-            var tableIndexesToKeep = indexRequest
-                .EvaluateToEntities()
-                .Where(index => !index.Columns.Any(column => column.Name.EqualsNoCase(Name)))
-                .ToList();
-
-            Db.Query(query);
-
-            indexRequest.Method = Method.POST;
-            indexRequest.Selector = () => tableIndexesToKeep;
-            indexRequest.Evaluate().ThrowIfError();
         }
 
         internal string ToSQL() => $"{Name.Fnuttify()} {Type}";

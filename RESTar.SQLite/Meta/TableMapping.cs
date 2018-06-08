@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Meta;
 using RESTar.Requests;
@@ -68,6 +69,8 @@ namespace RESTar.SQLite.Meta
 
         #endregion
 
+        #region Public
+
         /// <summary>
         /// The CLR class of the mapping
         /// </summary>
@@ -99,18 +102,6 @@ namespace RESTar.SQLite.Meta
         public ColumnMappings ColumnMappings { get; private set; }
 
         /// <summary>
-        /// The RESTar resource instance, if any, corresponding to this mapping
-        /// </summary>
-        internal IEntityResource Resource { get; set; }
-
-        internal IEnumerable<ColumnMapping> TransactMappings { get; private set; }
-
-        /// <summary>
-        /// The names of the mapped columns of this table mapping
-        /// </summary>
-        internal HashSet<string> SQLColumnNames { get; private set; }
-
-        /// <summary>
         /// Does this table mapping have a corresponding SQL table?
         /// </summary>
         public bool Exists
@@ -122,6 +113,22 @@ namespace RESTar.SQLite.Meta
                 return results > 0;
             }
         }
+
+        #endregion
+
+        /// <summary>
+        /// The RESTar resource instance, if any, corresponding to this mapping
+        /// </summary>
+        internal IEntityResource Resource { get; set; }
+
+        internal IEnumerable<ColumnMapping> TransactMappings { get; private set; }
+
+        /// <summary>
+        /// The names of the mapped columns of this table mapping
+        /// </summary>
+        internal HashSet<string> SQLColumnNames { get; private set; }
+
+        #region RESTar
 
         /// <inheritdoc />
         public IEnumerable<TableMapping> Select(IRequest<TableMapping> request)
@@ -136,78 +143,7 @@ namespace RESTar.SQLite.Meta
                 {new Option("update", "Updates all table mappings", _ => TableMappingByType.Values.ForEach(m => m.Update()))};
         }
 
-        private HashSet<string> MakeColumnNames() => new HashSet<string>(
-            ColumnMappings.Select(c => c.SQLColumn.Name), StringComparer.OrdinalIgnoreCase);
-
-        private void DropTable()
-        {
-            Db.Query($"DROP TABLE IF EXISTS {TableName}");
-            RemoveTable(this);
-        }
-
-        /// <summary>
-        /// Gets the SQL columns of the mapped SQL table
-        /// </summary>
-        /// <returns></returns>
-        public List<SQLColumn> GetSQLColumns()
-        {
-            var columns = new List<SQLColumn>();
-            Db.Query($"PRAGMA table_info({TableName})", row => columns.Add(new SQLColumn(row.GetString(1), row.GetString(2).ParseSQLDataType())));
-            return columns;
-        }
-
-        internal void ReloadColumnNames() => SQLColumnNames = MakeColumnNames();
-
-        internal void Update()
-        {
-            ColumnMappings = GetDeclaredColumnMappings();
-            ColumnMappings.Push();
-            var columnNames = MakeColumnNames();
-            GetSQLColumns()
-                .Where(column => !columnNames.Contains(column.Name))
-                .ForEach(column => ColumnMappings.Add(new ColumnMapping
-                (
-                    tableMapping: this,
-                    clrProperty: new CLRProperty(column.Name, column.Type.ToCLRTypeCode()),
-                    sqlColumn: column
-                )));
-            ReloadColumnNames();
-            TransactMappings = ColumnMappings.Where(mapping => !mapping.CLRProperty.IsIgnored).ToArray();
-        }
-
-        private void Drop() => Db.Query($"DROP TABLE {TableName};");
-
-        private ColumnMappings GetDeclaredColumnMappings() => CLRClass
-            .GetDeclaredColumnProperties()
-            .Values
-            .Select(property => new ColumnMapping
-            (
-                tableMapping: this,
-                clrProperty: property,
-                sqlColumn: new SQLColumn
-                (
-                    name: property.MemberAttribute?.ColumnName ?? property.Name,
-                    type: property.Type.ToSQLDataType()
-                )
-            ))
-            .ToColumnMappings();
-
-        internal string GetCreateTableSQL() => $"CREATE TABLE {TableName} ({(ColumnMappings ?? GetDeclaredColumnMappings()).ToSQL()});";
-
-        internal static void Create(Type clrClass) => new TableMapping(clrClass);
-
-        internal static bool Drop(Type clrClass)
-        {
-            switch (Get(clrClass))
-            {
-                case null: return false;
-                case var declared when declared.IsDeclared: return false;
-                case var procedural:
-                    procedural.Drop();
-                    TableMappingByType.Remove(clrClass);
-                    return true;
-            }
-        }
+        #endregion
 
         /// <summary>
         /// Creates a new table mapping, mapping a CLR class to an SQL table
@@ -224,6 +160,8 @@ namespace RESTar.SQLite.Meta
             if (!Exists) Db.Query(GetCreateTableSQL());
             Update();
         }
+
+        #region Helpers
 
         private static void Validate(Type type)
         {
@@ -249,5 +187,113 @@ namespace RESTar.SQLite.Meta
                     $"No public auto-implemented instance properties found in type '{type}'. SQLite does not support empty tables, " +
                     "so each SQLiteTable must define at least one public auto-implemented instance property.");
         }
+
+        private HashSet<string> MakeColumnNames() => new HashSet<string>(
+            ColumnMappings.Select(c => c.SQLColumn.Name), StringComparer.OrdinalIgnoreCase);
+
+        private void DropTable()
+        {
+            Db.Query($"DROP TABLE IF EXISTS {TableName}");
+            RemoveTable(this);
+        }
+
+        internal void DropColumns(List<ColumnMapping> mappings)
+        {
+            mappings.ForEach(mapping => ColumnMappings.Remove(mapping));
+            ReloadColumnNames();
+            var tempColumnNames = new HashSet<string>(SQLColumnNames);
+            tempColumnNames.Remove("rowid");
+            var columnsSQL = string.Join(", ", tempColumnNames);
+            var tempName = $"__{TableName}__RESTAR_TEMP";
+            var query = "PRAGMA foreign_keys=off;BEGIN TRANSACTION;" +
+                        $"ALTER TABLE {TableName} RENAME TO {tempName};" +
+                        $"{GetCreateTableSQL()}" +
+                        $"INSERT INTO {TableName} ({columnsSQL})" +
+                        $"  SELECT {columnsSQL} FROM {tempName};" +
+                        $"DROP TABLE {tempName};" +
+                        "COMMIT;PRAGMA foreign_keys=on;";
+            var indexRequest = Context.Root.CreateRequest<DatabaseIndex>();
+            indexRequest.Conditions.Add(new Condition<DatabaseIndex>
+            (
+                key: nameof(DatabaseIndex.ResourceName),
+                op: Operators.EQUALS,
+                value: Resource.Name
+            ));
+            var tableIndexesToKeep = indexRequest
+                .EvaluateToEntities()
+                .Where(index => !index.Columns.Any(column => mappings.Any(mapping => column.Name.EqualsNoCase(mapping.SQLColumn.Name))))
+                .ToList();
+            Db.Query(query);
+            indexRequest.Method = Method.POST;
+            indexRequest.Selector = () => tableIndexesToKeep;
+            indexRequest.Evaluate().ThrowIfError();
+            Update();
+        }
+
+        /// <summary>
+        /// Gets the SQL columns of the mapped SQL table
+        /// </summary>
+        /// <returns></returns>
+        public List<SQLColumn> GetSQLColumns()
+        {
+            var columns = new List<SQLColumn>();
+            Db.Query($"PRAGMA table_info({TableName})", row => columns.Add(new SQLColumn(row.GetString(1), row.GetString(2).ParseSQLDataType())));
+            return columns;
+        }
+
+        private void ReloadColumnNames() => SQLColumnNames = MakeColumnNames();
+
+        internal void Update()
+        {
+            ColumnMappings = GetDeclaredColumnMappings();
+            ColumnMappings.Push();
+            var columnNames = MakeColumnNames();
+            GetSQLColumns()
+                .Where(column => !columnNames.Contains(column.Name))
+                .ForEach(column => ColumnMappings.Add(new ColumnMapping
+                (
+                    tableMapping: this,
+                    clrProperty: new CLRProperty(column.Name, column.Type.ToCLRTypeCode()),
+                    sqlColumn: column
+                )));
+            ReloadColumnNames();
+            TransactMappings = ColumnMappings.Where(mapping => !mapping.CLRProperty.IsIgnored).ToArray();
+        }
+
+        private void Drop() => Db.Query($"DROP TABLE {TableName};");
+
+        private string GetCreateTableSQL() => $"CREATE TABLE {TableName} ({(ColumnMappings ?? GetDeclaredColumnMappings()).ToSQL()});";
+
+        private ColumnMappings GetDeclaredColumnMappings() => CLRClass
+            .GetDeclaredColumnProperties()
+            .Values
+            .Select(property => new ColumnMapping
+            (
+                tableMapping: this,
+                clrProperty: property,
+                sqlColumn: new SQLColumn
+                (
+                    name: property.MemberAttribute?.ColumnName ?? property.Name,
+                    type: property.Type.ToSQLDataType()
+                )
+            ))
+            .ToColumnMappings();
+
+        internal static void Create(Type clrClass) => new TableMapping(clrClass);
+
+        internal static bool Drop(Type clrClass)
+        {
+            switch (Get(clrClass))
+            {
+                case null: return false;
+                case var declared when declared.IsDeclared: return false;
+                case var procedural:
+                    procedural.Drop();
+                    TableMappingByType.Remove(clrClass);
+                    return true;
+            }
+        }
+
+        #endregion
     }
 }

@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using RESTar.Linq;
 using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Resources.Operations;
-using RESTar.Resources.Templates;
 using RESTar.SQLite;
 using static RESTar.Method;
 
@@ -28,7 +26,7 @@ namespace RESTarTutorial
                 uri: "/api",
                 requireApiKey: true,
                 configFilePath: projectFolder + "/Config.xml",
-                entityResourceProviders: new[] {new SQLiteProvider(projectFolder, "data2")}
+                entityResourceProviders: new[] {new SQLiteProvider(projectFolder, "data3")}
             );
 
             // The 'port' argument sets the HTTP port on which to register the REST handlers
@@ -119,44 +117,6 @@ namespace RESTarTutorial
         public int Id { get; set; }
     }
 
-    [RESTar(GET, PATCH)]
-    public class MyElasticSQLiteController : ElasticSQLiteTableController<MyElastic>, ISelector<MyElasticSQLiteController>,
-        IUpdater<MyElasticSQLiteController>
-    {
-        public IEnumerable<MyElasticSQLiteController> Select(IRequest<MyElasticSQLiteController> request) =>
-            Select<MyElasticSQLiteController>().Where(request.Conditions);
-
-        public int Update(IRequest<MyElasticSQLiteController> request) =>
-            request.GetInputEntities().Count(entity => entity.Update());
-
-        [RESTar]
-        public class Dropper : OptionsTerminal
-        {
-            protected override IEnumerable<Option> GetOptions()
-            {
-                return new[]
-                {
-                    new Option("drop", "Drops a given column", args =>
-                    {
-                        var tableName = args[0];
-                        var columnName = args[1];
-                        var item = Select<MyElasticSQLiteController>().First();
-                        item.DropColumn(columnName);
-                    })
-                };
-            }
-        }
-    }
-
     [RESTar]
-    public class Event : ResourceController<Event, SQLiteProvider>
-    {
-        protected override dynamic Data { get; } = new EventData();
-    }
-
-    public class EventData
-    {
-        public string BaseTypeName = typeof(MyElastic).AssemblyQualifiedName;
-    }
-
+    public class Event : SQLiteResourceController<Event, MyElastic> { }
 }

@@ -30,8 +30,6 @@ namespace RESTar.SQLite.Meta
             SQLColumn.Push();
         }
 
-        internal void Drop() => SQLColumn.Drop();
-
         /// <summary>
         /// Creates a column from a CLR PropertyInfo
         /// </summary>

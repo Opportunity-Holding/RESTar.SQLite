@@ -129,21 +129,21 @@ namespace RESTar.SQLite
         {
             var _resource = (ProceduralResource) resource;
             _resource.Methods = methods;
-            SQLite<ProceduralResource>.Update(_resource);
+            SQLite<ProceduralResource>.Update(new[] {_resource});
         }
 
         protected override void SetProceduralResourceDescription(IProceduralEntityResource resource, string newDescription)
         {
             var _resource = (ProceduralResource) resource;
             _resource.Description = newDescription;
-            SQLite<ProceduralResource>.Update(_resource);
+            SQLite<ProceduralResource>.Update(new[] {_resource});
         }
 
         protected override bool DeleteProceduralResource(IProceduralEntityResource resource)
         {
             var _resource = (ProceduralResource) resource;
             TableMapping.Drop(_resource.Type);
-            SQLite<ProceduralResource>.Delete(_resource);
+            SQLite<ProceduralResource>.Delete(new[] {_resource});
             return true;
         }
     }

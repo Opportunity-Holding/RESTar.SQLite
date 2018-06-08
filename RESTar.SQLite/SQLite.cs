@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Data;
 using System.Data.SQLite;
 using System.Linq;
@@ -8,60 +7,6 @@ using RESTar.SQLite.Meta;
 
 namespace RESTar.SQLite
 {
-    public class Db
-    {
-        internal static int Query(string sql)
-        {
-            var res = 0;
-            Query(sql, command => res = command.ExecuteNonQuery());
-            return res;
-        }
-
-        private static void Query(string sql, Action<SQLiteCommand> action)
-        {
-            using (var connection = new SQLiteConnection(Settings.ConnectionString))
-            {
-                connection.Open();
-                action(new SQLiteCommand(sql, connection) { CommandType = CommandType.Text });
-            }
-        }
-
-        internal static void Query(string sql, Action<SQLiteDataReader> rowAction)
-        {
-            using (var connection = new SQLiteConnection(Settings.ConnectionString))
-            {
-                connection.Open();
-                var command = new SQLiteCommand(sql, connection) { CommandType = CommandType.Text };
-                using (var reader = command.ExecuteReader())
-                    while (reader.Read())
-                        rowAction(reader);
-            }
-        }
-
-        internal static void Transact(Action<SQLiteCommand> commandAction)
-        {
-            using (var connection = new SQLiteConnection(Settings.ConnectionString))
-            {
-                connection.Open();
-                using (var command = new SQLiteCommand(connection) { CommandType = CommandType.Text })
-                {
-                    using (var transaction = connection.BeginTransaction())
-                    {
-                        try
-                        {
-                            commandAction(command);
-                            transaction.Commit();
-                        }
-                        catch
-                        {
-                            transaction.Rollback();
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     /// <summary>
     /// Helper class for accessing RESTar.SQLite tables
     /// </summary>
@@ -109,17 +54,6 @@ namespace RESTar.SQLite
         }
 
         /// <summary>
-        /// Updates the corresponding SQLite database table row for a given updated 
-        /// entity and returns the number of rows affected.
-        /// </summary>
-        public static int Update(T updatedEntity)
-        {
-            if (updatedEntity == default(T)) return 0;
-            return Db.Query($"UPDATE {TableMapping<T>.TableName} SET {updatedEntity.ToSQLiteUpdateSet()} " +
-                                            $"WHERE RowId={updatedEntity.RowId}");
-        }
-
-        /// <summary>
         /// Updates the corresponding SQLite database table rows for a given IEnumerable 
         /// of updated entities and returns the number of rows affected.
         /// </summary>
@@ -134,17 +68,6 @@ namespace RESTar.SQLite
                 count += command.ExecuteNonQuery();
             }));
             return count;
-        }
-
-        /// <summary>
-        /// Deletes the corresponding SQLite database table row for a given entity, and returns 
-        /// the number of database rows affected.
-        /// </summary>
-        public static int Delete(T entity)
-        {
-            if (entity == default(T)) return 0;
-            return Db.Query($"DELETE FROM {TableMapping<T>.TableName} WHERE RowId={entity.RowId}"
-            );
         }
 
         /// <summary>
