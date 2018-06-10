@@ -9,15 +9,15 @@ namespace RESTar.SQLite
         where TController : SQLiteResourceController<TController, TBaseType>, new()
         where TBaseType : ElasticSQLiteTable
     {
-        public class _Definition : ElasticSQLiteTableController<_Definition, TBaseType> { }
+        public class TableDefinition : ElasticSQLiteTableController<TableDefinition, TBaseType> { }
 
         protected override dynamic Data { get; }
 
-        [RESTarMember(order: 3)] public _Definition Definition { get; private set; }
+        [RESTarMember(order: 3)] public TableDefinition Definition { get; private set; }
 
         public override IEnumerable<TController> Select(IRequest<TController> request) => base.Select(request).Select(item =>
         {
-            item.Definition = _Definition.Select().First(s => s.CLRTypeName == item.Name);
+            item.Definition = TableDefinition.Select().First(s => s.CLRTypeName == item.Name);
             return item;
         });
 

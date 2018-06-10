@@ -90,6 +90,24 @@ namespace RESTar.SQLite
         }
 
         /// <summary>
+        /// Deletes the corresponding SQLite database table rows for a given IEnumerable 
+        /// of entities, and returns the number of database rows affected.
+        /// </summary>
+        /// <returns></returns>
+        public static int Delete(IEnumerable<long> rowIds)
+        {
+            if (rowIds == null) return 0;
+            var sqlstub = $"DELETE FROM {TableMapping<T>.TableName} WHERE RowId=";
+            var count = 0;
+            Db.Transact(command => rowIds.ForEach(rowId =>
+            {
+                command.CommandText = sqlstub + rowId;
+                count += command.ExecuteNonQuery();
+            }));
+            return count;
+        }
+
+        /// <summary>
         /// Counts all rows in the SQLite database where a certain where clause is true.
         /// </summary>
         /// <param name="where">The WHERE clause of the SQL query to execute. Will be preceded 

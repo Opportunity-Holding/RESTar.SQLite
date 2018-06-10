@@ -79,7 +79,7 @@ namespace RESTar.SQLite.Meta
         /// <summary>
         /// The name of the CLR class of the mapping
         /// </summary>
-        public string ClassName => CLRClass.FullName;
+        public string ClassName => CLRClass.FullName?.Replace('+', '.');
 
         /// <summary>
         /// The name of the mapped SQLite table
@@ -154,7 +154,7 @@ namespace RESTar.SQLite.Meta
             TableMappingKind = clrClass.IsSubclassOf(typeof(ElasticSQLiteTable)) ? Elastic : Static;
             IsDeclared = !clrClass.Assembly.Equals(TypeBuilder.Assembly);
             CLRClass = clrClass;
-            TableName = clrClass.GetCustomAttribute<SQLiteAttribute>()?.CustomTableName ?? clrClass.FullName?.Replace('.', '$')
+            TableName = clrClass.GetCustomAttribute<SQLiteAttribute>()?.CustomTableName ?? clrClass.FullName?.Replace('+', '.').Replace('.', '$')
                         ?? throw new SQLiteException("RESTar.SQLite encountered an unknown CLR class when creating table mappings");
             TableMappingByType[CLRClass] = this;
             if (!Exists) Db.Query(GetCreateTableSQL());

@@ -18,7 +18,7 @@ namespace RESTar.SQLite
         public string[] DroppedColumns { get; set; }
 
         public virtual IEnumerable<TController> Select(IRequest<TController> request) => Select().Where(request.Conditions);
-        public virtual int Update(IRequest<TController> request) => request.GetInputEntities().ToList().Count(entity => entity.Update());
+        public virtual int Update(IRequest<TController> request) => request.GetInputEntities().Count(entity => entity.Update());
 
         protected ElasticSQLiteTableController() { }
 

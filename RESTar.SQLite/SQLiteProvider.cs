@@ -41,7 +41,7 @@ namespace RESTar.SQLite
         }
 
         /// <inheritdoc />
-        public override void ModifyResourceAttribute(Type type, RESTarAttribute attribute)
+        protected override void ModifyResourceAttribute(Type type, RESTarAttribute attribute)
         {
             if (type.IsSubclassOf(typeof(ElasticSQLiteTable)))
             {
@@ -51,7 +51,7 @@ namespace RESTar.SQLite
         }
 
         /// <inheritdoc />
-        public override IDatabaseIndexer DatabaseIndexer { get; }
+        protected override IDatabaseIndexer DatabaseIndexer { get; }
 
         /// <inheritdoc />
         public SQLiteProvider(string databaseDirectory, string databaseName)
@@ -80,7 +80,7 @@ namespace RESTar.SQLite
         }
 
         /// <inheritdoc />
-        public override void ReceiveClaimed(ICollection<IEntityResource> claimedResources)
+        protected override void ReceiveClaimed(ICollection<IEntityResource> claimedResources)
         {
             foreach (var claimed in claimedResources)
             {

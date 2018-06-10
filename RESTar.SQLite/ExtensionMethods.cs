@@ -20,7 +20,7 @@ namespace RESTar.SQLite
                 .Where(property =>
                 {
                     var getter = property.GetGetMethod();
-                    var setter = property.GetGetMethod();
+                    var setter = property.GetSetMethod();
                     if (getter == null && setter == null) return false;
                     if (!(getter ?? setter).HasAttribute<CompilerGeneratedAttribute>(out _))
                         return false;
@@ -28,7 +28,7 @@ namespace RESTar.SQLite
                         throw new SQLiteException($"SQLite type '{type}' contained a public auto-implemented instance property '{property.Name}' " +
                                                   "with a non-defined or non-public get accessor. This property cannot be used with SQLite. To ignore this " +
                                                   "property, decorate it with the 'SQLiteMemberAttribute' and set 'ignore' to true");
-                    if (setter == null)
+                    if (setter == null && property.Name != nameof(SQLiteTable.RowId))
                         throw new SQLiteException($"SQLite type '{type}' contained a public auto-implemented instance property '{property.Name}' " +
                                                   "with a non-public set accessor. This property cannot be used with SQLite. To ignore this " +
                                                   "property, decorate it with the 'SQLiteMemberAttribute' and set 'ignore' to true");

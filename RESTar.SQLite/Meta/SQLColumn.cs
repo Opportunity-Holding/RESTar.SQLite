@@ -1,4 +1,5 @@
 ﻿using System;
+using RESTar.Resources;
 using static System.StringComparison;
 
 namespace RESTar.SQLite.Meta
@@ -23,7 +24,7 @@ namespace RESTar.SQLite.Meta
         /// <summary>
         /// Does this instance represent the RowId SQLite column?
         /// </summary>
-        public bool IsRowId { get; }
+        [RESTarMember(ignore: true)] public bool IsRowId { get; }
 
         /// <summary>
         /// Creates a new SQLColumn instance

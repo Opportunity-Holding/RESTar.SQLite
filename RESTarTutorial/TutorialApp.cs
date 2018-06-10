@@ -115,8 +115,34 @@ namespace RESTarTutorial
     {
         public string Name { get; set; }
         public int Id { get; set; }
+
+        [SQLite, RESTar]
+        public class MyOtherElastic : ElasticSQLiteTable
+        {
+            public string Name { get; set; }
+            public int Id { get; set; }
+        }
     }
 
     [RESTar]
     public class Event : SQLiteResourceController<Event, MyElastic> { }
+
+    [SQLite, RESTar]
+    public class Resource1 : SQLiteTable
+    {
+        public int Sbyte { get; set; }
+        public byte Byte { get; set; }
+        public short Short { get; set; }
+        public int Ushort { get; set; }
+        public int Int { get; set; }
+        public int Uint { get; set; }
+        public long Long { get; set; }
+        public long Ulong { get; set; }
+        public float Float { get; set; }
+        public double Double { get; set; }
+        public decimal Decimal { get; set; }
+        public string String { get; set; }
+        public bool Bool { get; set; }
+        public DateTime DateTime { get; set; }
+    }
 }
