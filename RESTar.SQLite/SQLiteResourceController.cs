@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using RESTar.Requests;
 using RESTar.Resources;
@@ -12,14 +13,18 @@ namespace RESTar.SQLite
         public class TableDefinition : ElasticSQLiteTableController<TableDefinition, TBaseType> { }
 
         protected override dynamic Data { get; }
+        private Type BaseType { get; }
 
         [RESTarMember(order: 3)] public TableDefinition Definition { get; private set; }
 
-        public override IEnumerable<TController> Select(IRequest<TController> request) => base.Select(request).Select(item =>
-        {
-            item.Definition = TableDefinition.Select().First(s => s.CLRTypeName == item.Name);
-            return item;
-        });
+        public override IEnumerable<TController> Select(IRequest<TController> request) => base
+            .Select(request)
+            .Where(item => item.Type.IsSubclassOf(BaseType))
+            .Select(item =>
+            {
+                item.Definition = TableDefinition.Select().First(s => s.CLRTypeName == item.Name);
+                return item;
+            });
 
         public override int Update(IRequest<TController> request)
         {
@@ -35,11 +40,11 @@ namespace RESTar.SQLite
 
         protected SQLiteResourceController()
         {
-            var baseType = typeof(TBaseType);
-            if (!baseType.IsSubclassOf(typeof(ElasticSQLiteTable)))
-                throw new SQLiteException($"Cannot create procedural SQLite resource from base type '{baseType}'. Must be a " +
+            BaseType = typeof(TBaseType);
+            if (!BaseType.IsSubclassOf(typeof(ElasticSQLiteTable)))
+                throw new SQLiteException($"Cannot create procedural SQLite resource from base type '{BaseType}'. Must be a " +
                                           "subclass of RESTar.SQLite.ElasticSQLiteTable with at least one defined column property.");
-            Data = new SQLiteProceduralResourceData {BaseTypeName = baseType.AssemblyQualifiedName};
+            Data = new SQLiteProceduralResourceData { BaseTypeName = BaseType.AssemblyQualifiedName };
         }
     }
 

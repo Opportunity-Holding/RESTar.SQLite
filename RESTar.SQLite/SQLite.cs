@@ -45,7 +45,7 @@ namespace RESTar.SQLite
             if (entities == null) return 0;
             var count = 0;
             var sqlStub = $"INSERT INTO {TableMapping<T>.TableName}";
-            Db.Transact(command => entities.ForEach(entity =>
+            Db.Transact(command => entities.AsParallel().ForEach(entity =>
             {
                 command.CommandText = $"{sqlStub} {entity.ToSQLiteInsertValues()}";
                 count += command.ExecuteNonQuery();
@@ -62,7 +62,7 @@ namespace RESTar.SQLite
             if (updatedEntities == null) return 0;
             var count = 0;
             var sqlStub = $"UPDATE {TableMapping<T>.TableName} SET ";
-            Db.Transact(command => updatedEntities.ForEach(updatedEntity =>
+            Db.Transact(command => updatedEntities.AsParallel().ForEach(updatedEntity =>
             {
                 command.CommandText = $"{sqlStub} {updatedEntity.ToSQLiteUpdateSet()} WHERE RowId={updatedEntity.RowId}";
                 count += command.ExecuteNonQuery();
@@ -81,7 +81,7 @@ namespace RESTar.SQLite
             if (entities == null) return 0;
             var sqlstub = $"DELETE FROM {TableMapping<T>.TableName} WHERE RowId=";
             var count = 0;
-            Db.Transact(command => entities.ForEach(entity =>
+            Db.Transact(command => entities.AsParallel().ForEach(entity =>
             {
                 command.CommandText = sqlstub + entity.RowId;
                 count += command.ExecuteNonQuery();
@@ -99,7 +99,7 @@ namespace RESTar.SQLite
             if (rowIds == null) return 0;
             var sqlstub = $"DELETE FROM {TableMapping<T>.TableName} WHERE RowId=";
             var count = 0;
-            Db.Transact(command => rowIds.ForEach(rowId =>
+            Db.Transact(command => rowIds.AsParallel().ForEach(rowId =>
             {
                 command.CommandText = sqlstub + rowId;
                 count += command.ExecuteNonQuery();
@@ -119,8 +119,8 @@ namespace RESTar.SQLite
             using (var connection = new SQLiteConnection(Settings.ConnectionString))
             {
                 connection.Open();
-                var command = new SQLiteCommand(sql, connection) {CommandType = CommandType.Text};
-                return (long) command.ExecuteScalar();
+                using (var command = new SQLiteCommand(sql, connection) {CommandType = CommandType.Text})
+                    return (long) command.ExecuteScalar();
             }
         }
     }

@@ -12,10 +12,12 @@ namespace RESTar.SQLite
         private static readonly Constructor<T> Constructor = typeof(T).MakeStaticConstructor<T>();
         private SQLiteDataReader Reader { get; set; }
         private SQLiteConnection Connection { get; }
+        private SQLiteCommand Command { get; set; }
         private string SQL { get; }
 
         public void Dispose()
         {
+            Command.Dispose();
             Reader.Dispose();
             Connection.Dispose();
         }
@@ -24,11 +26,16 @@ namespace RESTar.SQLite
 
         public void Reset()
         {
+            Command.Dispose();
             Reader.Dispose();
             Init();
         }
 
-        private void Init() => Reader = new SQLiteCommand(SQL, Connection).ExecuteReader();
+        private void Init()
+        {
+            Command = new SQLiteCommand(SQL, Connection);
+            Reader = Command.ExecuteReader();
+        }
 
         internal SQLiteEnumerator(string sql)
         {
