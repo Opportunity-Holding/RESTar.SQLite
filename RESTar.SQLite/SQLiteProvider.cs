@@ -2,18 +2,17 @@
 using System.Collections.Generic;
 using System.Data.SQLite;
 using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
 using RESTar.Linq;
 using RESTar.Meta;
+using RESTar.Requests;
 using RESTar.Resources;
-using RESTar.Resources.Operations;
-using Starcounter;
-using static RESTar.Method;
+using RESTar.SQLite.Meta;
 
 namespace RESTar.SQLite
 {
-    /// <inheritdoc />
+    /// <inheritdoc cref="EntityResourceProvider{T}" />
+    /// <inheritdoc cref="IProceduralEntityResourceProvider" />
     /// <summary>
     /// A resource provider for the SQLite database system. To use, include an instance of this class 
     /// in the call to RESTarConfig.Init(). To register SQLite resources, create subclasses of SQLiteTable
@@ -22,53 +21,37 @@ namespace RESTar.SQLite
     /// mapping and query building is done by RESTar. Use the DatabaseIndex resource to register indexes 
     /// for SQLite resources (just like you would for Starcounter resources).
     /// </summary>
-    public class SQLiteProvider : EntityResourceProvider<SQLiteTable>
+    public class SQLiteProvider : EntityResourceProvider<SQLiteTable>, IProceduralEntityResourceProvider
     {
+        private static bool IsInitiated { get; set; }
+
+        private static void Init()
+        {
+            if (IsInitiated) return;
+            typeof(SQLiteTable).GetConcreteSubclasses().ForEach(TableMapping.Create);
+            IsInitiated = true;
+        }
+
+
         /// <inheritdoc />
         protected override bool IsValid(IEntityResource resource, out string reason)
         {
-            var columnProperties = resource.Members.Values
-                .Where(p => p.HasAttribute<ColumnAttribute>())
-                .ToList();
-            if (!columnProperties.Any())
-            {
-                reason = "SQLite resource types must contain at least one public instance property declared " +
-                         "as column using the ColumnAttribute";
-                return false;
-            }
-
-            if (!typeof(SQLiteTable).IsAssignableFrom(resource.Type))
-            {
-                reason = $"'{resource.Type.FullName}' does not subclass the '{typeof(SQLiteTable).FullName}' abstract " +
-                         "class needed for all SQLite resource types.";
-                return false;
-            }
-
-            if (resource.AvailableMethods.Contains(POST) && resource.Type.GetConstructor(Type.EmptyTypes) == null)
-                reason = $"Expected parameterless constructor for type '{resource.Type.FullName}' to support POST";
-
-            foreach (var column in columnProperties)
-            {
-                if (column.Name.ToLower() == "rowid")
-                {
-                    reason = "SQLite resources cannot contain column properties called 'RowId' or any case " +
-                             "variants of it";
-                    return false;
-                }
-
-                if (!column.Type.IsSQLiteCompatibleValueType(resource.Type, out var error))
-                {
-                    reason = error;
-                    return false;
-                }
-            }
-
             reason = null;
             return true;
         }
 
         /// <inheritdoc />
-        public override IDatabaseIndexer DatabaseIndexer { get; }
+        protected override void ModifyResourceAttribute(Type type, RESTarAttribute attribute)
+        {
+            if (type.IsSubclassOf(typeof(ElasticSQLiteTable)))
+            {
+                attribute.AllowDynamicConditions = true;
+                attribute.FlagStaticMembers = true;
+            }
+        }
+
+        /// <inheritdoc />
+        protected override IDatabaseIndexer DatabaseIndexer { get; }
 
         /// <inheritdoc />
         public SQLiteProvider(string databaseDirectory, string databaseName)
@@ -81,9 +64,9 @@ namespace RESTar.SQLite
                 Directory.CreateDirectory(databaseDirectory);
             if (!File.Exists(databasePath))
                 SQLiteConnection.CreateFile(databasePath);
-            Db.TransactAsync(() =>
+            Starcounter.Db.TransactAsync(() =>
             {
-                Settings.All.ForEach(Db.Delete);
+                Settings.All.ForEach(Starcounter.Db.Delete);
                 new Settings
                 {
                     DatabasePath = databasePath,
@@ -93,41 +76,83 @@ namespace RESTar.SQLite
                 };
             });
             DatabaseIndexer = new SQLiteIndexer();
+            Init();
         }
 
         /// <inheritdoc />
-        public override void ReceiveClaimed(ICollection<IEntityResource> claimedResources)
+        protected override void ReceiveClaimed(ICollection<IEntityResource> claimedResources)
         {
-            typeof(SQLiteTable)
-                .GetConcreteSubclasses()
-                .Except(claimedResources.Select(r => r.Type))
-                .ForEach(r => throw new SQLiteException(
-                    $"Found an invalid SQLiteTable resource declaration for type '{r.FullName}'. " +
-                    "RESTar.SQLite.SQLiteTable subclasses must be declared as RESTar resources or " +
-                    "wrapped by a ResourceWrapper"));
-            claimedResources.ForEach(Cache.Add);
-            SQLiteDb.SetupTables(claimedResources);
+            foreach (var claimed in claimedResources)
+            {
+                var tableMapping = TableMapping.Get(claimed.Type) ?? throw new SQLiteException(
+                                       $"A resource '{claimed}' was claimed by the SQLite resource provider, " +
+                                       "but had no existing table mapping");
+                tableMapping.Resource = claimed;
+            }
         }
 
         /// <inheritdoc />
         protected override Type AttributeType => typeof(SQLiteAttribute);
 
-        /// <inheritdoc />
-        protected override Selector<T> GetDefaultSelector<T>() => SQLiteOperations<T>.Select;
+        protected override IEnumerable<T> DefaultSelect<T>(IRequest<T> request) => SQLiteOperations<T>.Select(request);
+        protected override int DefaultInsert<T>(IRequest<T> request) => SQLiteOperations<T>.Insert(request);
+        protected override int DefaultUpdate<T>(IRequest<T> request) => SQLiteOperations<T>.Update(request);
+        protected override int DefaultDelete<T>(IRequest<T> request) => SQLiteOperations<T>.Delete(request);
+        protected override long DefaultCount<T>(IRequest<T> request) => SQLiteOperations<T>.Count(request);
 
-        /// <inheritdoc />
-        protected override Inserter<T> GetDefaultInserter<T>() => SQLiteOperations<T>.Insert;
+        protected override IEnumerable<IProceduralEntityResource> SelectProceduralResources()
+        {
+            foreach (var resource in SQLite<ProceduralResource>.Select())
+            {
+                var type = resource.Type;
+                if (type != null)
+                {
+                    if (TableMapping.Get(type) == null)
+                        TableMapping.Create(type);
+                    yield return resource;
+                }
+            }
+        }
 
-        /// <inheritdoc />
-        protected override Updater<T> GetDefaultUpdater<T>() => SQLiteOperations<T>.Update;
+        protected override IProceduralEntityResource InsertProceduralResource(string name, string description, Method[] methods, dynamic data)
+        {
+            var resource = new ProceduralResource
+            {
+                Name = name,
+                Description = description,
+                Methods = methods,
+                BaseTypeName = data.BaseTypeName ?? throw new SQLiteException("No BaseTypeName defined in 'Data' in resource controller")
+            };
+            var resourceType = resource.Type;
+            if (resourceType == null)
+                throw new SQLiteException(
+                    $"Could not locate basetype '{resource.BaseTypeName}' when building procedural resource '{resource.Name}'. " +
+                    "Was the assembly modified between builds?");
+            TableMapping.Create(resourceType);
+            SQLite<ProceduralResource>.Insert(resource);
+            return resource;
+        }
 
-        /// <inheritdoc />
-        protected override Deleter<T> GetDefaultDeleter<T>() => SQLiteOperations<T>.Delete;
+        protected override void SetProceduralResourceMethods(IProceduralEntityResource resource, Method[] methods)
+        {
+            var _resource = (ProceduralResource) resource;
+            _resource.Methods = methods;
+            SQLite<ProceduralResource>.Update(new[] {_resource});
+        }
 
-        /// <inheritdoc />
-        protected override Counter<T> GetDefaultCounter<T>() => SQLiteOperations<T>.Count;
+        protected override void SetProceduralResourceDescription(IProceduralEntityResource resource, string newDescription)
+        {
+            var _resource = (ProceduralResource) resource;
+            _resource.Description = newDescription;
+            SQLite<ProceduralResource>.Update(new[] {_resource});
+        }
 
-        /// <inheritdoc />
-        protected override Profiler<T> GetProfiler<T>() => null;
+        protected override bool DeleteProceduralResource(IProceduralEntityResource resource)
+        {
+            var _resource = (ProceduralResource) resource;
+            TableMapping.Drop(_resource.Type);
+            SQLite<ProceduralResource>.Delete(new[] {_resource});
+            return true;
+        }
     }
 }

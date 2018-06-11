@@ -11,6 +11,7 @@ namespace RESTar.SQLite
         /// <summary>
         /// The unique SQLite row ID for this row
         /// </summary>
-        [RESTarMember(order: int.MaxValue), Key] public long RowId { get; internal set; }
+        [RESTarMember(order: int.MaxValue), Key]
+        public long RowId { get; internal set; }
     }
 }

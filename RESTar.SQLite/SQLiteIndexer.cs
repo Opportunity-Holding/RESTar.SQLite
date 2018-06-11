@@ -6,22 +6,26 @@ using RESTar.Admin;
 using RESTar.Linq;
 using RESTar.Requests;
 using RESTar.Resources;
+using RESTar.SQLite.Meta;
 
 namespace RESTar.SQLite
 {
     internal class SQLiteIndexer : IDatabaseIndexer
     {
-        private const string syntax =
-            @"CREATE +INDEX +""*(?<name>\w+)""* +ON +""*(?<table>[\w\$]+)""* +\((?:(?<columns>""*\w+""* *[""*\w+""*]*) *,* *)+\)";
+        private const string syntax = @"CREATE +INDEX +""*(?<name>\w+)""* +ON +""*(?<table>[\w\$]+)""* " +
+                                      @"\((?:(?<columns>""*\w+""* *[""*\w+""*]*) *,* *)+\)";
 
         public IEnumerable<DatabaseIndex> Select(IRequest<DatabaseIndex> request)
         {
             var sqls = new List<string>();
-            SQLiteDb.Query("SELECT sql FROM sqlite_master WHERE type='index'", row => sqls.Add(row.GetString(0)));
+            Db.Query("SELECT sql FROM sqlite_master WHERE type='index'", row => sqls.Add(row.GetString(0)));
             return sqls.Select(sql =>
             {
                 var groups = Regex.Match(sql, syntax, RegexOptions.IgnoreCase).Groups;
-                return new DatabaseIndex(groups["table"].Value.GetResourceName())
+                var tableName = groups["table"].Value;
+                var mapping = TableMapping.All.FirstOrDefault(m => m.TableName.EqualsNoCase(tableName));
+                if (mapping == null) throw new Exception($"Unknown SQLite table '{tableName}'");
+                return new DatabaseIndex(mapping.Resource.Name)
                 {
                     Name = groups["name"].Value,
                     Columns = groups["columns"].Captures.Cast<Capture>().Select(column =>
@@ -39,11 +43,13 @@ namespace RESTar.SQLite
             var count = 0;
             foreach (var index in request.GetInputEntities())
             {
-                if (index.IResource == null)
+                var tableMapping = TableMapping.Get(index.Resource.Type);
+                if (index.Resource == null)
                     throw new Exception("Found no resource to register index on");
-                var sql = $"CREATE INDEX {index.Name.Fnuttify()} ON {index.IResource.GetSQLiteTableName().Fnuttify()} " +
+                var sql = $"CREATE INDEX {index.Name.Fnuttify()} ON {tableMapping.TableName} " +
                           $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "ASC")}"))})";
-                count += SQLiteDb.Query(sql);
+                Db.Query(sql);
+                count += 1;
             }
             return count;
         }
@@ -54,10 +60,12 @@ namespace RESTar.SQLite
             var count = 0;
             foreach (var index in request.GetInputEntities())
             {
-                SQLiteDb.Query($"DROP INDEX {index.Name.Fnuttify()} ON {index.IResource.GetSQLiteTableName().Fnuttify()}");
-                count += SQLiteDb.Query($"CREATE INDEX {index.Name.Fnuttify()} ON " +
-                                        $"{index.IResource.GetSQLiteTableName().Fnuttify()} " +
-                                        $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "")}"))})");
+                var tableMapping = TableMapping.Get(index.Resource.Type);
+                Db.Query($"DROP INDEX {index.Name.Fnuttify()} ON {tableMapping.TableName}");
+                var sql = $"CREATE INDEX {index.Name.Fnuttify()} ON {tableMapping.TableName} " +
+                          $"({string.Join(", ", index.Columns.Select(c => $"{c.Name.Fnuttify()} {(c.Descending ? "DESC" : "")}"))})";
+                Db.Query(sql);
+                count += 1;
             }
             return count;
         }
@@ -65,8 +73,13 @@ namespace RESTar.SQLite
         public int Delete(IRequest<DatabaseIndex> request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
-            return request.GetInputEntities().Sum(index => SQLiteDb.Query($"DROP INDEX {index.Name.Fnuttify()} ON " +
-                                                                     $"{index.IResource.GetSQLiteTableName().Fnuttify()}"));
+            var count = 0;
+            foreach (var index in request.GetInputEntities())
+            {
+                Db.Query($"DROP INDEX {index.Name.Fnuttify()}");
+                count += 1;
+            }
+            return count;
         }
     }
 }

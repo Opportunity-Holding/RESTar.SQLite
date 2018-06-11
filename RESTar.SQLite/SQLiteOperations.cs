@@ -1,46 +1,42 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using RESTar.Linq;
-using RESTar.Meta;
-using RESTar.Resources.Operations;
+using RESTar.Requests;
+using RESTar.SQLite.Meta;
 
 namespace RESTar.SQLite
 {
     internal static class SQLiteOperations<T> where T : SQLiteTable
     {
-        internal static readonly Selector<T> Select;
-        public static readonly Inserter<T> Insert;
-        public static readonly Updater<T> Update;
-        public static readonly Deleter<T> Delete;
-        public static readonly Counter<T> Count;
-
-        static SQLiteOperations()
+        public static IEnumerable<T> Select(IRequest<T> request)
         {
-            Select = request =>
-            {
-                var (sql, post) = request.Conditions.Split(c =>
-                    c.Term.Count == 1 &&
-                    c.Term.First is DeclaredProperty d &&
-                    d.HasAttribute<ColumnAttribute>());
-                return SQLite<T>
+            var (sql, post) = request.Conditions.Split(IsSQLiteQueryable);
+            return SQLite<T>.Select(sql.ToSQLiteWhereClause(), request.Method == Method.DELETE).Where(post);
+        }
+
+        public static int Insert(IRequest<T> request) => SQLite<T>.Insert(request.GetInputEntities());
+        public static int Update(IRequest<T> request) => SQLite<T>.Update(request.GetInputEntities().ToList());
+
+        public static int Delete(IRequest<T> request)
+        {
+            var input = request.GetInputEntities();
+            return SQLite<T>.Delete(input.AsParallel().Select(e => e.RowId).ToList());
+        }
+
+        public static long Count(IRequest<T> request)
+        {
+            var (sql, post) = request.Conditions.Split(IsSQLiteQueryable);
+            return post.Any()
+                ? SQLite<T>
                     .Select(sql.ToSQLiteWhereClause())
-                    .Where(post);
-            };
-            Insert = r => SQLite<T>.Insert(r.GetInputEntities());
-            Update = r => SQLite<T>.Update(r.GetInputEntities());
-            Delete = r => SQLite<T>.Delete(r.GetInputEntities());
-            Count = request =>
-            {
-                var (sql, post) = request.Conditions.Split(c =>
-                    c.Term.Count == 1 &&
-                    c.Term.First is DeclaredProperty d &&
-                    d.HasAttribute<ColumnAttribute>());
-                return post.Any()
-                    ? SQLite<T>
-                        .Select(sql.ToSQLiteWhereClause())
-                        .Where(post)
-                        .Count()
-                    : SQLite<T>.Count(sql.ToSQLiteWhereClause());
-            };
+                    .Where(post)
+                    .Count()
+                : SQLite<T>.Count(sql.ToSQLiteWhereClause());
+        }
+
+        private static bool IsSQLiteQueryable(ICondition condition)
+        {
+            return condition.Term.Count == 1 && TableMapping<T>.SQLColumnNames.Contains(condition.Term.First.Name);
         }
     }
 }

@@ -7,6 +7,7 @@
       <Resource>RESTar.Admin.*</Resource>
       <Resource>RESTar.Dynamic.*</Resource>
       <Resource>RESTarTutorial.*</Resource>
+      <Resource>RESTar.SQLite.Meta.*</Resource>
       <Methods>*</Methods>
     </AllowAccess>
   </ApiKey>

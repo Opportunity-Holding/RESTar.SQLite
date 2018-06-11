@@ -26,7 +26,7 @@ namespace RESTarTutorial
                 uri: "/api",
                 requireApiKey: true,
                 configFilePath: projectFolder + "/Config.xml",
-                entityResourceProviders: new[] {new SQLiteProvider(projectFolder, "data")}
+                entityResourceProviders: new[] {new SQLiteProvider(projectFolder, "data_debug")}
             );
 
             // The 'port' argument sets the HTTP port on which to register the REST handlers
@@ -50,10 +50,21 @@ namespace RESTarTutorial
     [RESTar, SQLite]
     public class SQLiteResource : SQLiteTable
     {
-        [Column] public string STR { get; set; }
-        [Column] public int INT { get; set; }
-        [Column] public DateTime DATETIME { get; set; }
-        [Column] public decimal DECIMAL { get; set; }
+        public string STR { get; set; }
+        public int INT { get; set; }
+        public DateTime DATETIME { get; set; }
+        public decimal DECIMAL { get; set; }
+
+        public int STRLength => STR.Length;
+    }
+
+    [SQLite]
+    public class SQLiteResource2 : SQLiteTable
+    {
+        public string STR { get; set; }
+        public int INT { get; set; }
+        public DateTime DATETIME { get; set; }
+        public decimal DECIMAL { get; set; }
 
         public int STRLength => STR.Length;
     }
@@ -91,9 +102,66 @@ namespace RESTarTutorial
     [SQLite(CustomTableName = "Heroes"), RESTar]
     public class Superhero : SQLiteTable
     {
-        [Column] public string Name { get; set; }
-        [Column] public string Id { get; set; }
-        [Column] public string Sex { get; set; }
-        [Column] public int Year { get; set; }
+        public string Name { get; set; }
+        public string Id { get; set; }
+        public string Sex { get; set; }
+
+        [SQLiteMember(columnName: "YearIntroduced")]
+        public int Year { get; set; }
+    }
+
+    [SQLite, RESTar]
+    public class MyElastic : ElasticSQLiteTable
+    {
+        public string Name { get; set; }
+        public int Id { get; set; }
+
+        [SQLite, RESTar]
+        public class MyOtherElastic : ElasticSQLiteTable
+        {
+            public string Name { get; set; }
+            public int Id { get; set; }
+        }
+    }
+
+    [RESTar]
+    public class Event : SQLiteResourceController<Event, MyElastic> { }
+
+    [SQLite, RESTar]
+    public class Resource1 : SQLiteTable
+    {
+        public int Sbyte { get; set; }
+        public byte Byte { get; set; }
+        public short Short { get; set; }
+        public int Ushort { get; set; }
+        public int Int { get; set; }
+        public int Uint { get; set; }
+        public long Long { get; set; }
+        public long Ulong { get; set; }
+        public float Float { get; set; }
+        public double Double { get; set; }
+        public decimal Decimal { get; set; }
+        public string String { get; set; }
+        public bool Bool { get; set; }
+        public DateTime DateTime { get; set; }
+    }
+
+    [SQLite, RESTar]
+    public class Resource2 : SQLiteTable
+    {
+        public int Sbyte { get; set; }
+        public byte Byte { get; set; }
+        public short Short { get; set; }
+        public int Ushort { get; set; }
+        public int Int { get; set; }
+        public int Uint { get; set; }
+        public long Long { get; set; }
+        public long Ulong { get; set; }
+        public float Float { get; set; }
+        public double Double { get; set; }
+        public decimal Decimal { get; set; }
+        public string String { get; set; }
+        public bool Bool { get; set; }
+        public DateTime DateTime { get; set; }
     }
 }

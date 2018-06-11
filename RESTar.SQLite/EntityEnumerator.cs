@@ -3,19 +3,22 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Data.SQLite;
 using RESTar.Meta;
+using RESTar.SQLite.Meta;
 
 namespace RESTar.SQLite
 {
-    internal class SQLiteEnumerator<T> : IEnumerator<T> where T : SQLiteTable
+    internal class EntityEnumerator<T> : IEnumerator<T> where T : SQLiteTable
     {
         private static readonly Constructor<T> Constructor = typeof(T).MakeStaticConstructor<T>();
-        private Dictionary<string, DeclaredProperty> Columns { get; }
         private SQLiteDataReader Reader { get; set; }
         private SQLiteConnection Connection { get; }
+        private SQLiteCommand Command { get; set; }
         private string SQL { get; }
+        private bool OnlyRowId { get; }
 
         public void Dispose()
         {
+            Command.Dispose();
             Reader.Dispose();
             Connection.Dispose();
         }
@@ -24,35 +27,43 @@ namespace RESTar.SQLite
 
         public void Reset()
         {
+            Command.Dispose();
             Reader.Dispose();
             Init();
         }
 
-        private void Init() => Reader = new SQLiteCommand(SQL, Connection).ExecuteReader();
-
-        internal SQLiteEnumerator(string sql)
+        private void Init()
         {
-            Columns = typeof(T).GetColumns();
+            Command = new SQLiteCommand(SQL, Connection);
+            Reader = Command.ExecuteReader();
+        }
+
+        internal EntityEnumerator(string sql, bool onlyRowId)
+        {
+            OnlyRowId = onlyRowId;
             Connection = new SQLiteConnection(Settings.ConnectionString);
             Connection.Open();
             SQL = sql;
             Init();
         }
 
+        object IEnumerator.Current => Current;
+        public T Current => MakeEntity();
+
         private T MakeEntity()
         {
             var entity = Constructor();
             entity.RowId = Reader.GetInt64(0);
-            foreach (var column in Columns)
+            if (OnlyRowId) return entity;
+            foreach (var column in TableMapping<T>.TransactMappings)
             {
-                var value = Reader[column.Key];
+                var value = Reader[column.SQLColumn.Name];
                 if (!(value is DBNull))
-                    column.Value.SetValue(entity, value);
+                    column.CLRProperty.Set?.Invoke(entity, value);
+                else if (!column.CLRProperty.IsDeclared)
+                    column.CLRProperty.Set?.Invoke(entity, null);
             }
             return entity;
         }
-
-        object IEnumerator.Current => Current;
-        public T Current => MakeEntity();
     }
 }

@@ -2,41 +2,59 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using RESTar.Meta;
-using RESTar.Requests;
-using static RESTar.Requests.Operators;
+using RESTar.SQLite.Meta;
+using static System.Reflection.BindingFlags;
+using static RESTar.Method;
 
 namespace RESTar.SQLite
 {
     internal static class ExtensionMethods
     {
-        internal static string GetColumnDef(this DeclaredProperty column) =>
-            $"{column.ActualName.ToLower().Fnuttify()} {column.Type.ToSQLType()}";
-
-        internal static string GetResourceName(this string tableName) => Resource.ByTypeName(tableName.Replace('$', '.')).Name;
-
-        internal static string Fnuttify(this string sqlKey) => $"\"{sqlKey}\"";
-
-        internal static bool IsSQLiteCompatibleValueType(this Type type, Type resourceType, out string error)
+        internal static IDictionary<string, CLRProperty> GetDeclaredColumnProperties(this Type type)
         {
-            if (type.ToSQLType() == null)
-            {
-                error = $"Could not create SQLite database column for a property of type '{type.FullName}' in resource type " +
-                        $"'{resourceType?.FullName}'. Unsupported type";
-                return false;
-            }
-            error = null;
-            return true;
+            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            return type.GetProperties(Public | Instance)
+                .Where(property => !property.HasAttribute(out SQLiteMemberAttribute attribute) || !attribute.Ignored)
+                .Where(property =>
+                {
+                    var getter = property.GetGetMethod();
+                    var setter = property.GetSetMethod();
+                    if (getter == null && setter == null) return false;
+                    if (!(getter ?? setter).HasAttribute<CompilerGeneratedAttribute>(out _))
+                        return false;
+                    if (getter == null)
+                        throw new SQLiteException($"SQLite type '{type}' contained a public auto-implemented instance property '{property.Name}' " +
+                                                  "with a non-defined or non-public get accessor. This property cannot be used with SQLite. To ignore this " +
+                                                  "property, decorate it with the 'SQLiteMemberAttribute' and set 'ignore' to true");
+                    if (setter == null && property.Name != nameof(SQLiteTable.RowId))
+                        throw new SQLiteException($"SQLite type '{type}' contained a public auto-implemented instance property '{property.Name}' " +
+                                                  "with a non-public set accessor. This property cannot be used with SQLite. To ignore this " +
+                                                  "property, decorate it with the 'SQLiteMemberAttribute' and set 'ignore' to true");
+                    if (!property.PropertyType.IsSQLiteCompatibleValueType())
+                        throw new SQLiteException($"SQLite type '{type}' contained a public auto-implemented instance property '{property.Name}' " +
+                                                  $"with a non-compatible type '{property.PropertyType.Name}'. This property cannot be used with SQLite. " +
+                                                  "To ignore this property, decorate it with the 'SQLiteMemberAttribute' and set 'ignore' to true. " +
+                                                  $"Valid property types: {string.Join(", ", EnumMember<CLRDataType>.Names)}");
+                    if (property.HasAttribute(out SQLiteMemberAttribute attr) && attr.ColumnName.Equals("rowid", StringComparison.OrdinalIgnoreCase))
+                        throw new SQLiteException($"SQLite type '{type}' contained a public auto-implemented instance property '{property.Name}' " +
+                                                  "with a custom column name 'rowid'. This name is reserved by SQLite and cannot be used.");
+                    if (!names.Add(property.Name))
+                        throw new SQLiteException($"The type definition for class '{type}' contained multiple properties with the name " +
+                                                  $"'{property.Name}' (case insensitive). SQL is case insensitive, so for mapping to work, all mapped " +
+                                                  "properties must have unique case insensitive names.");
+                    return true;
+                })
+                .ToDictionary(
+                    keySelector: property => property.Name,
+                    elementSelector: property => new CLRProperty(property),
+                    comparer: StringComparer.OrdinalIgnoreCase
+                );
         }
 
-        private static bool IsNullable(this Type type, out Type baseType)
-        {
-            baseType = null;
-            if (!type.IsGenericType || type.GetGenericTypeDefinition() != typeof(Nullable<>))
-                return false;
-            baseType = type.GenericTypeArguments[0];
-            return true;
-        }
+
+        private static bool IsNullable(this Type type, out Type baseType) => (baseType = Nullable.GetUnderlyingType(type)) != null;
 
         internal static (string, string) TSplit(this string str, char splitCharacter)
         {
@@ -44,107 +62,34 @@ namespace RESTar.SQLite
             return (split[0], split.ElementAtOrDefault(1));
         }
 
-        internal static string ToSQLType(this Type type)
+        internal static string ToMethodsString(this IEnumerable<Method> ie) => string.Join(", ", ie);
+
+        internal static Method[] ToMethodsArray(this string methodsString)
         {
-            switch (Type.GetTypeCode(type))
-            {
-                case TypeCode.Int16: return "SMALLINT";
-                case TypeCode.Int32: return "INT";
-                case TypeCode.Int64: return "BIGINT";
-                case TypeCode.Single: return "SINGLE";
-                case TypeCode.Double: return "DOUBLE";
-                case TypeCode.Decimal: return "DECIMAL";
-                case TypeCode.Byte: return "TINYINT";
-                case TypeCode.String: return "TEXT";
-                case TypeCode.Boolean: return "BOOLEAN";
-                case TypeCode.DateTime: return "DATETIME";
-                case var _ when type.IsNullable(out var t): return t.ToSQLType();
-                default: return null;
-            }
+            if (methodsString == null) return null;
+            if (methodsString.Trim() == "*")
+                return new[] {GET, POST, PATCH, PUT, DELETE, REPORT, HEAD};
+            return methodsString.Split(',')
+                .Where(s => s != "")
+                .Select(s => (Method) Enum.Parse(typeof(Method), s))
+                .ToArray();
         }
 
-        private static string MakeSQLValueLiteral(this object o)
-        {
-            switch (o)
-            {
-                case null: return "NULL";
-                case true: return "1";
-                case false: return "0";
+        internal static bool EqualsNoCase(this string s1, string s2) => string.Equals(s1, s2, StringComparison.OrdinalIgnoreCase);
 
-                case char _:
-                case string _: return $"\'{o}\'";
-                case DateTime _: return $"DATETIME(\'{o:O}\')";
-                default: return $"{o}";
-            }
-        }
-
-        private static string GetSQLOperator(Operators op)
-        {
-            switch (op)
-            {
-                case EQUALS: return "=";
-                case NOT_EQUALS: return "<>";
-                case LESS_THAN: return "<";
-                case GREATER_THAN: return ">";
-                case LESS_THAN_OR_EQUALS: return "<=";
-                case GREATER_THAN_OR_EQUALS: return ">=";
-                default: throw new ArgumentOutOfRangeException(nameof(op), op, null);
-            }
-        }
-
-        internal static string ToSQLiteWhereClause<T>(this IEnumerable<Condition<T>> conditions) where T : class
-        {
-            var values = string.Join(" AND ", conditions.Where(c => !c.Skip).Select(c =>
-            {
-                var op = GetSQLOperator(c.Operator);
-                var key = c.Term.First.ActualName;
-                var valueLiteral = MakeSQLValueLiteral((object) c.Value);
-                if (valueLiteral == "NULL")
-                {
-                    switch (c.Operator)
-                    {
-                        case EQUALS:
-                            op = "IS";
-                            break;
-                        case NOT_EQUALS:
-                            op = "IS NOT";
-                            break;
-                        default: throw new SQLiteException($"Operator '{op}' is not valid for comparison with NULL");
-                    }
-                }
-                return $"{key.Fnuttify()} {op} {valueLiteral}";
-            }));
-            return string.IsNullOrWhiteSpace(values) ? null : "WHERE " + values;
-        }
-
-        internal static string ToSQLiteInsertValues<T>(this T entity) where T : SQLiteTable => string.Join(",",
-            typeof(T).GetColumns().Values.Select(c => MakeSQLValueLiteral((object) c.GetValue(entity))));
-
-        internal static string ToSQLiteUpdateSet<T>(this T entity) where T : SQLiteTable => string.Join(",",
-            typeof(T).GetColumns().Values.Select(c => $"{c.Name}={MakeSQLValueLiteral((object) c.GetValue(entity))}"));
-
-        internal static bool HasAttribute<TAttribute>(this Type type, out TAttribute attribute)
+        private static bool HasAttribute<TAttribute>(this MemberInfo type, out TAttribute attribute)
             where TAttribute : Attribute
         {
             attribute = type?.GetCustomAttributes<TAttribute>().FirstOrDefault();
             return attribute != null;
         }
 
-        internal static bool HasAttribute<TAttribute>(this MemberInfo type, out TAttribute attribute)
-            where TAttribute : Attribute
-        {
-            attribute = type?.GetCustomAttributes<TAttribute>().FirstOrDefault();
-            return attribute != null;
-        }
-
-        internal static IList<Type> GetConcreteSubclasses(this Type baseType) => baseType.GetSubclasses()
-            .Where(type => !type.IsAbstract)
-            .ToList();
-
-        internal static IEnumerable<Type> GetSubclasses(this Type baseType) =>
-            from assembly in AppDomain.CurrentDomain.GetAssemblies()
-            from type in assembly.GetTypes()
-            where type.IsSubclassOf(baseType)
-            select type;
+        internal static IEnumerable<Type> GetConcreteSubclasses(this Type baseType) => AppDomain
+            .CurrentDomain
+            .GetAssemblies()
+            .SelectMany(assembly => assembly.GetTypes(), (assembly, type) => (assembly, type))
+            .Where(t => t.type.IsSubclassOf(baseType))
+            .Select(t => t.type)
+            .Where(type => !type.IsAbstract);
     }
 }
