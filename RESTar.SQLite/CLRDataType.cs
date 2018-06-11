@@ -1,4 +1,5 @@
-﻿namespace RESTar.SQLite {
+﻿namespace RESTar.SQLite
+{
     public enum CLRDataType
     {
         Unsupported = 0,
