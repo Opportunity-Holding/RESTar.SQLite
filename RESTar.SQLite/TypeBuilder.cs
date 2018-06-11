@@ -24,9 +24,8 @@ namespace RESTar.SQLite
         {
             var existing = AssemblyBuilder.GetType(resource.Name);
             if (existing != null) return existing;
-            var baseType = Type.GetType(resource.BaseTypeName) ?? throw new SQLiteException(
-                               $"Could not locate basetype '{resource.BaseTypeName}' when building procedural resource '{resource.Name}'. " +
-                               "Make sure to include an assembly-qualified name.");
+            var baseType = Type.GetType(resource.BaseTypeName);
+            if (baseType == null) return null;
             return MakeType(resource.Name, baseType);
         }
 

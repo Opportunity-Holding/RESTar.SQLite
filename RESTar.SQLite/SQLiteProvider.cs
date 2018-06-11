@@ -104,9 +104,13 @@ namespace RESTar.SQLite
         {
             foreach (var resource in SQLite<ProceduralResource>.Select())
             {
-                if (TableMapping.Get(resource.Type) == null)
-                    TableMapping.Create(resource.Type);
-                yield return resource;
+                var type = resource.Type;
+                if (type != null)
+                {
+                    if (TableMapping.Get(type) == null)
+                        TableMapping.Create(type);
+                    yield return resource;
+                }
             }
         }
 
@@ -120,6 +124,10 @@ namespace RESTar.SQLite
                 BaseTypeName = data.BaseTypeName ?? throw new SQLiteException("No BaseTypeName defined in 'Data' in resource controller")
             };
             var resourceType = resource.Type;
+            if (resourceType == null)
+                throw new SQLiteException(
+                    $"Could not locate basetype '{resource.BaseTypeName}' when building procedural resource '{resource.Name}'. " +
+                    "Was the assembly modified between builds?");
             TableMapping.Create(resourceType);
             SQLite<ProceduralResource>.Insert(resource);
             return resource;

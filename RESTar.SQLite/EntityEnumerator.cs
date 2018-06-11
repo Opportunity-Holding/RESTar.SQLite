@@ -7,13 +7,14 @@ using RESTar.SQLite.Meta;
 
 namespace RESTar.SQLite
 {
-    internal class SQLiteEnumerator<T> : IEnumerator<T> where T : SQLiteTable
+    internal class EntityEnumerator<T> : IEnumerator<T> where T : SQLiteTable
     {
         private static readonly Constructor<T> Constructor = typeof(T).MakeStaticConstructor<T>();
         private SQLiteDataReader Reader { get; set; }
         private SQLiteConnection Connection { get; }
         private SQLiteCommand Command { get; set; }
         private string SQL { get; }
+        private bool OnlyRowId { get; }
 
         public void Dispose()
         {
@@ -37,18 +38,23 @@ namespace RESTar.SQLite
             Reader = Command.ExecuteReader();
         }
 
-        internal SQLiteEnumerator(string sql)
+        internal EntityEnumerator(string sql, bool onlyRowId)
         {
+            OnlyRowId = onlyRowId;
             Connection = new SQLiteConnection(Settings.ConnectionString);
             Connection.Open();
             SQL = sql;
             Init();
         }
 
+        object IEnumerator.Current => Current;
+        public T Current => MakeEntity();
+
         private T MakeEntity()
         {
             var entity = Constructor();
             entity.RowId = Reader.GetInt64(0);
+            if (OnlyRowId) return entity;
             foreach (var column in TableMapping<T>.TransactMappings)
             {
                 var value = Reader[column.SQLColumn.Name];
@@ -59,8 +65,5 @@ namespace RESTar.SQLite
             }
             return entity;
         }
-
-        object IEnumerator.Current => Current;
-        public T Current => MakeEntity();
     }
 }

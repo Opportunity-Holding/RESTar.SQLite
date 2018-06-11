@@ -37,6 +37,8 @@ namespace RESTar.SQLite.Meta
         /// </summary>
         public static ColumnMappings ColumnMappings => Get.ColumnMappings;
 
+        public static (string name, string columns, string[] param, ColumnMapping[] mappings) InsertSpec => Get.InsertSpec;
+
         public static IEnumerable<ColumnMapping> TransactMappings => Get.TransactMappings;
 
         /// <summary>
@@ -128,6 +130,8 @@ namespace RESTar.SQLite.Meta
         /// </summary>
         internal HashSet<string> SQLColumnNames { get; private set; }
 
+        internal (string name, string columns, string[] param, ColumnMapping[] mappings) InsertSpec { get; private set; }
+
         #region RESTar
 
         /// <inheritdoc />
@@ -188,8 +192,18 @@ namespace RESTar.SQLite.Meta
                     "so each SQLiteTable must define at least one public auto-implemented instance property.");
         }
 
-        private HashSet<string> MakeColumnNames() => new HashSet<string>(
-            ColumnMappings.Select(c => c.SQLColumn.Name), StringComparer.OrdinalIgnoreCase);
+        private HashSet<string> MakeColumnNames()
+        {
+            var columnNames = new HashSet<string>(ColumnMappings.Select(c => c.SQLColumn.Name), StringComparer.OrdinalIgnoreCase);
+
+            var definedColumns = ColumnMappings.Where(m => !m.IsRowId).ToArray();
+            var columns = string.Join(", ", definedColumns.Select(c => c.SQLColumn.Name));
+            var mappings = definedColumns;
+            var param = definedColumns.Select(c => $"@{c.SQLColumn.Name}").ToArray();
+            InsertSpec = (TableName, columns, param, mappings);
+
+            return columnNames;
+        }
 
         private void DropTable()
         {

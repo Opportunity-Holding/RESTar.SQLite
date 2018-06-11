@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data;
 using RESTar.Resources;
 using static System.StringComparison;
 
@@ -22,6 +23,11 @@ namespace RESTar.SQLite.Meta
         public SQLDataType Type { get; }
 
         /// <summary>
+        /// The type of the column, as defined in System.Data
+        /// </summary>
+        internal DbType DbType { get; }
+
+        /// <summary>
         /// Does this instance represent the RowId SQLite column?
         /// </summary>
         [RESTarMember(ignore: true)] public bool IsRowId { get; }
@@ -36,6 +42,7 @@ namespace RESTar.SQLite.Meta
             if (type == SQLDataType.Unsupported)
                 throw new InvalidOperationException($"An SQL column '{Name}' was created with an unsupported data type");
             Type = type;
+            DbType = type.ToDbTypeCode();
         }
 
         internal void SetMapping(ColumnMapping mapping) => Mapping = mapping;

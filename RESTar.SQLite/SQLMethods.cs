@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using RESTar.Requests;
@@ -69,6 +70,25 @@ namespace RESTar.SQLite
             }
         }
 
+        internal static DbType ToDbTypeCode(this SQLDataType sqlDataType)
+        {
+            switch (sqlDataType)
+            {
+                case SQLDataType.SMALLINT: return DbType.Int16;
+                case SQLDataType.INT: return DbType.Int32;
+                case SQLDataType.BIGINT: return DbType.Int64;
+                case SQLDataType.SINGLE: return DbType.Single;
+                case SQLDataType.DOUBLE: return DbType.Double;
+                case SQLDataType.DECIMAL: return DbType.Decimal;
+                case SQLDataType.TINYINT: return DbType.Byte;
+                case SQLDataType.TEXT: return DbType.String;
+                case SQLDataType.BOOLEAN: return DbType.Boolean;
+                case SQLDataType.DATETIME: return DbType.DateTime;
+                default: return default;
+            }
+        }
+
+
         internal static CLRDataType ToCLRTypeCode(this SQLDataType sqlDataType)
         {
             switch (sqlDataType)
@@ -87,14 +107,13 @@ namespace RESTar.SQLite
             }
         }
 
-        private static string MakeSQLValueLiteral(this object o)
+        internal static string MakeSQLValueLiteral(this object o)
         {
             switch (o)
             {
                 case null: return "NULL";
                 case true: return "1";
                 case false: return "0";
-
                 case char _:
                 case string _: return $"\'{o}\'";
                 case DateTime _: return $"DATETIME(\'{o:O}\')";

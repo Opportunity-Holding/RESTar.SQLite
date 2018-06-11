@@ -19,11 +19,12 @@ namespace RESTar.SQLite
         /// </summary>
         /// <param name="where">The WHERE clause of the SQL query to execute. Will be preceded 
         /// by "SELECT * FROM {type} " in the actual query</param>
+        /// <param name="onlyRowId">Populates only RowIds for the resulting entities</param>
         /// <returns></returns>
-        public static IEnumerable<T> Select(string where = null)
+        public static IEnumerable<T> Select(string where = null, bool onlyRowId = false)
         {
             var sql = $"SELECT RowId,* FROM {TableMapping<T>.TableName} {where}";
-            return new SQLiteEnumerable<T>(sql).AsParallel();
+            return new EntityEnumerable<T>(sql, onlyRowId).AsParallel();
         }
 
         /// <summary>
@@ -44,12 +45,29 @@ namespace RESTar.SQLite
         {
             if (entities == null) return 0;
             var count = 0;
-            var sqlStub = $"INSERT INTO {TableMapping<T>.TableName}";
-            Db.Transact(command => entities.AsParallel().ForEach(entity =>
+            var (name, columns, param, mappings) = TableMapping<T>.InsertSpec;
+            using (var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn())
+            using (var command = connection.CreateCommand())
+            using (var transaction = connection.BeginTransaction())
             {
-                command.CommandText = $"{sqlStub} {entity.ToSQLiteInsertValues()}";
-                count += command.ExecuteNonQuery();
-            }));
+                command.CommandText = $"INSERT INTO {name} ({columns}) VALUES ({string.Join(", ", param)})";
+                for (var i = 0; i < mappings.Length; i++)
+                    command.Parameters.Add(param[i], mappings[i].SQLColumn.DbType);
+                try
+                {
+                    foreach (var entity in entities)
+                    {
+                        for (var i = 0; i < mappings.Length; i++)
+                            command.Parameters[param[i]].Value = mappings[i].CLRProperty.Get?.Invoke(entity); // ?.MakeSQLValueLiteral();
+                        count += command.ExecuteNonQuery();
+                    }
+                    transaction.Commit();
+                }
+                catch
+                {
+                    transaction.Rollback();
+                }
+            }
             return count;
         }
 
