@@ -26,7 +26,7 @@ namespace RESTarTutorial
                 uri: "/api",
                 requireApiKey: true,
                 configFilePath: projectFolder + "/Config.xml",
-                entityResourceProviders: new[] {new SQLiteProvider(projectFolder, "data3")}
+                entityResourceProviders: new[] {new SQLiteProvider(projectFolder, "data.debug")}
             );
 
             // The 'port' argument sets the HTTP port on which to register the REST handlers
