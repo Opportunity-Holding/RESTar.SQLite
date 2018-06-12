@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Data;
 using System.Data.SQLite;
-using System.Linq;
 using RESTar.Linq;
 using RESTar.SQLite.Meta;
 
@@ -24,7 +23,7 @@ namespace RESTar.SQLite
         public static IEnumerable<T> Select(string where = null, bool onlyRowId = false)
         {
             var sql = $"SELECT RowId,* FROM {TableMapping<T>.TableName} {where}";
-            return new EntityEnumerable<T>(sql, onlyRowId).AsParallel();
+            return new EntityEnumerable<T>(sql, onlyRowId);
         }
 
         /// <summary>
@@ -80,7 +79,7 @@ namespace RESTar.SQLite
             if (updatedEntities == null) return 0;
             var count = 0;
             var sqlStub = $"UPDATE {TableMapping<T>.TableName} SET ";
-            Db.Transact(command => updatedEntities.AsParallel().ForEach(updatedEntity =>
+            Db.Transact(command => updatedEntities.ForEach(updatedEntity =>
             {
                 command.CommandText = $"{sqlStub} {updatedEntity.ToSQLiteUpdateSet()} WHERE RowId={updatedEntity.RowId}";
                 count += command.ExecuteNonQuery();
@@ -99,7 +98,7 @@ namespace RESTar.SQLite
             if (entities == null) return 0;
             var sqlstub = $"DELETE FROM {TableMapping<T>.TableName} WHERE RowId=";
             var count = 0;
-            Db.Transact(command => entities.AsParallel().ForEach(entity =>
+            Db.Transact(command => entities.ForEach(entity =>
             {
                 command.CommandText = sqlstub + entity.RowId;
                 count += command.ExecuteNonQuery();
@@ -117,7 +116,7 @@ namespace RESTar.SQLite
             if (rowIds == null) return 0;
             var sqlstub = $"DELETE FROM {TableMapping<T>.TableName} WHERE RowId=";
             var count = 0;
-            Db.Transact(command => rowIds.AsParallel().ForEach(rowId =>
+            Db.Transact(command => rowIds.ForEach(rowId =>
             {
                 command.CommandText = sqlstub + rowId;
                 count += command.ExecuteNonQuery();

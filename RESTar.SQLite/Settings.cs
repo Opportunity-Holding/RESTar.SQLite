@@ -39,6 +39,6 @@ namespace RESTar.SQLite
 
         private const string SQL = "SELECT t FROM RESTar.SQLite.Settings t";
         internal static IEnumerable<Settings> All => Starcounter.Db.SQL<Settings>(SQL);
-        internal static Settings Instance => Starcounter.Db.SQL<Settings>(SQL).FirstOrDefault();
+        public static Settings Instance => Starcounter.Db.SQL<Settings>(SQL).FirstOrDefault();
     }
 }

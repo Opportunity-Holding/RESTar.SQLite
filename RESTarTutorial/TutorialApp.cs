@@ -115,6 +115,7 @@ namespace RESTarTutorial
     {
         public string Name { get; set; }
         public int Id { get; set; }
+        public Settings Settings => Settings.Instance;
 
         [SQLite, RESTar]
         public class MyOtherElastic : ElasticSQLiteTable

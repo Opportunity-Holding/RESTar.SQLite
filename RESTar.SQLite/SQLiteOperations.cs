@@ -11,17 +11,15 @@ namespace RESTar.SQLite
         public static IEnumerable<T> Select(IRequest<T> request)
         {
             var (sql, post) = request.Conditions.Split(IsSQLiteQueryable);
-            return SQLite<T>.Select(sql.ToSQLiteWhereClause(), request.Method == Method.DELETE).Where(post);
+            return SQLite<T>.Select(
+                where: sql.ToSQLiteWhereClause(),
+                onlyRowId: request.Method == Method.DELETE && !request.Conditions.Any()
+            ).Where(post);
         }
 
         public static int Insert(IRequest<T> request) => SQLite<T>.Insert(request.GetInputEntities());
         public static int Update(IRequest<T> request) => SQLite<T>.Update(request.GetInputEntities().ToList());
-
-        public static int Delete(IRequest<T> request)
-        {
-            var input = request.GetInputEntities();
-            return SQLite<T>.Delete(input.AsParallel().Select(e => e.RowId).ToList());
-        }
+        public static int Delete(IRequest<T> request) => SQLite<T>.Delete(request.GetInputEntities().ToList());
 
         public static long Count(IRequest<T> request)
         {
