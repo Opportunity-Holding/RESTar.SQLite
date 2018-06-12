@@ -18,8 +18,11 @@ namespace RESTar.SQLite
             using (var connection = new SQLiteConnection(Settings.ConnectionString))
             {
                 connection.Open();
-                using (var command = new SQLiteCommand(sql, connection) {CommandType = CommandType.Text})
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = sql;
                     action(command);
+                }
             }
         }
 

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data.SQLite;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using RESTar.Linq;
 using RESTar.Meta;
@@ -112,7 +113,7 @@ namespace RESTar.SQLite
         /// <inheritdoc />
         protected override IEnumerable<IProceduralEntityResource> SelectProceduralResources()
         {
-            foreach (var resource in SQLite<ProceduralResource>.Select())
+            foreach (var resource in SQLite<ProceduralResource>.Select().ToList())
             {
                 var type = resource.Type;
                 if (type != null)

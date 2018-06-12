@@ -58,7 +58,7 @@ namespace RESTar.SQLite.Meta
                     throw new SQLiteException($"Cannot push column '{Name}' to SQLite table '{Mapping.TableMapping.TableName}'. " +
                                               $"The table already contained a column definition '({column.ToSQL()})'.");
             }
-            Db.Query($"ALTER TABLE {Mapping.TableMapping.TableName} ADD COLUMN {ToSQL()}");
+            Db.Query($"BEGIN TRANSACTION;ALTER TABLE {Mapping.TableMapping.TableName} ADD COLUMN {ToSQL()};COMMIT;");
         }
 
         internal string ToSQL() => $"{Name.Fnuttify()} {Type}";

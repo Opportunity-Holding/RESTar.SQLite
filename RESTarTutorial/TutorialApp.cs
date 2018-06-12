@@ -117,6 +117,8 @@ namespace RESTarTutorial
         public int Id { get; set; }
         public Settings Settings => Settings.Instance;
 
+        public DateTime Time { get; set; } = DateTime.UtcNow;
+
         [SQLite, RESTar]
         public class MyOtherElastic : ElasticSQLiteTable
         {
