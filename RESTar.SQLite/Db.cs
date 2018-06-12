@@ -4,7 +4,7 @@ using System.Data.SQLite;
 
 namespace RESTar.SQLite
 {
-    public static class Db
+    internal static class Db
     {
         internal static int Query(string sql)
         {

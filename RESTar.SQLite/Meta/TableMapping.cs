@@ -37,9 +37,9 @@ namespace RESTar.SQLite.Meta
         /// </summary>
         public static ColumnMappings ColumnMappings => Get.ColumnMappings;
 
-        public static (string name, string columns, string[] param, ColumnMapping[] mappings) InsertSpec => Get.InsertSpec;
+        internal static (string name, string columns, string[] param, ColumnMapping[] mappings) InsertSpec => Get.InsertSpec;
 
-        public static IEnumerable<ColumnMapping> TransactMappings => Get.TransactMappings;
+        internal static IEnumerable<ColumnMapping> TransactMappings => Get.TransactMappings;
 
         /// <summary>
         /// Gets the column names from the table mapping for the given type
@@ -140,11 +140,16 @@ namespace RESTar.SQLite.Meta
             return TableMappingByType.Values.Where(request.Conditions);
         }
 
+        /// <inheritdoc />
+        /// <summary>
+        /// Options for table mappings
+        /// </summary>
         [RESTar]
         public class Options : OptionsTerminal
         {
+            /// <inheritdoc />
             protected override IEnumerable<Option> GetOptions() => new[]
-                {new Option("update", "Updates all table mappings", _ => TableMappingByType.Values.ForEach(m => m.Update()))};
+                {new Option("Update", "Updates all table mappings", _ => TableMappingByType.Values.ForEach(m => m.Update()))};
         }
 
         #endregion

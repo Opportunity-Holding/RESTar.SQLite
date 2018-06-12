@@ -94,12 +94,22 @@ namespace RESTar.SQLite
         /// <inheritdoc />
         protected override Type AttributeType => typeof(SQLiteAttribute);
 
+        /// <inheritdoc />
         protected override IEnumerable<T> DefaultSelect<T>(IRequest<T> request) => SQLiteOperations<T>.Select(request);
+
+        /// <inheritdoc />
         protected override int DefaultInsert<T>(IRequest<T> request) => SQLiteOperations<T>.Insert(request);
+
+        /// <inheritdoc />
         protected override int DefaultUpdate<T>(IRequest<T> request) => SQLiteOperations<T>.Update(request);
+
+        /// <inheritdoc />
         protected override int DefaultDelete<T>(IRequest<T> request) => SQLiteOperations<T>.Delete(request);
+
+        /// <inheritdoc />
         protected override long DefaultCount<T>(IRequest<T> request) => SQLiteOperations<T>.Count(request);
 
+        /// <inheritdoc />
         protected override IEnumerable<IProceduralEntityResource> SelectProceduralResources()
         {
             foreach (var resource in SQLite<ProceduralResource>.Select())
@@ -114,6 +124,7 @@ namespace RESTar.SQLite
             }
         }
 
+        /// <inheritdoc />
         protected override IProceduralEntityResource InsertProceduralResource(string name, string description, Method[] methods, dynamic data)
         {
             var resource = new ProceduralResource
@@ -133,6 +144,7 @@ namespace RESTar.SQLite
             return resource;
         }
 
+        /// <inheritdoc />
         protected override void SetProceduralResourceMethods(IProceduralEntityResource resource, Method[] methods)
         {
             var _resource = (ProceduralResource) resource;
@@ -140,6 +152,7 @@ namespace RESTar.SQLite
             SQLite<ProceduralResource>.Update(new[] {_resource});
         }
 
+        /// <inheritdoc />
         protected override void SetProceduralResourceDescription(IProceduralEntityResource resource, string newDescription)
         {
             var _resource = (ProceduralResource) resource;
@@ -147,6 +160,7 @@ namespace RESTar.SQLite
             SQLite<ProceduralResource>.Update(new[] {_resource});
         }
 
+        /// <inheritdoc />
         protected override bool DeleteProceduralResource(IProceduralEntityResource resource)
         {
             var _resource = (ProceduralResource) resource;
