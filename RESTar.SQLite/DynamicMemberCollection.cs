@@ -49,7 +49,17 @@ namespace RESTar.SQLite
         public void Clear() => dict.Clear();
 
         /// <inheritdoc />
-        public void CopyTo(KeyValuePair<string, object>[] array, int arrayIndex) => throw new NotImplementedException();
+        public void CopyTo(KeyValuePair<string, object>[] array, int arrayIndex)
+        {
+            if (array == null) throw new ArgumentNullException(nameof(array));
+            if (arrayIndex < 0) throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+            if (arrayIndex + Count > array.Length - 1) throw new ArgumentException(nameof(arrayIndex));
+            foreach (var kvp in dict)
+            {
+                array[arrayIndex] = new KeyValuePair<string, object>(kvp.Key, kvp.Value.Value);
+                arrayIndex += 1;
+            }
+        }
 
         /// <inheritdoc />
         public bool Remove(KeyValuePair<string, object> item) => dict.Remove(new KeyValuePair<string, KeyValuePair<string, object>>(item.Key, item));
