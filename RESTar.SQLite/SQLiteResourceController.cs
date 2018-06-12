@@ -32,7 +32,7 @@ namespace RESTar.SQLite
         /// <summary>
         /// The table definition for this procedural SQLite resource
         /// </summary>
-        [RESTarMember(order: 3)] public TableDefinition Definition { get; private set; }
+        [RESTarMember(order: 100)] public TableDefinition Definition { get; private set; }
 
         /// <inheritdoc />
         public override IEnumerable<TController> Select(IRequest<TController> request) => base
