@@ -17,9 +17,26 @@ namespace RESTar.SQLite
             ).Where(post);
         }
 
-        public static int Insert(IRequest<T> request) => SQLite<T>.Insert(request.GetInputEntities());
-        public static int Update(IRequest<T> request) => SQLite<T>.Update(request.GetInputEntities().ToList());
-        public static int Delete(IRequest<T> request) => SQLite<T>.Delete(request.GetInputEntities().ToList());
+        public static int Insert(IRequest<T> request)
+        {
+            var count = 0;
+            Starcounter.Db.TransactAsync(() => count = SQLite<T>.Insert(request.GetInputEntities()));
+            return count;
+        }
+
+        public static int Update(IRequest<T> request)
+        {
+            var count = 0;
+            Starcounter.Db.TransactAsync(() => count = SQLite<T>.Update(request.GetInputEntities().ToList()));
+            return count;
+        }
+
+        public static int Delete(IRequest<T> request)
+        {
+            var count = 0;
+            Starcounter.Db.TransactAsync(() => count = SQLite<T>.Delete(request.GetInputEntities().ToList()));
+            return count;
+        }
 
         public static long Count(IRequest<T> request)
         {
