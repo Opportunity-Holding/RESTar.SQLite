@@ -27,16 +27,6 @@ namespace RESTar.SQLite
         }
 
         /// <summary>
-        /// Inserts a single SQLiteTable entity into the appropriate SQLite database
-        /// table and returns the number of rows affected.
-        /// </summary>
-        public static int Insert(T entity)
-        {
-            if (entity == default(T)) return 0;
-            return Db.Query($"INSERT INTO {TableMapping<T>.TableName} {entity.ToSQLiteInsertValues()}");
-        }
-
-        /// <summary>
         /// Inserts an IEnumerable of SQLiteTable entities into the appropriate SQLite database
         /// table and returns the number of rows affected.
         /// </summary>
@@ -56,6 +46,7 @@ namespace RESTar.SQLite
                 {
                     foreach (var entity in entities)
                     {
+                        entity._OnInsert();
                         for (var i = 0; i < mappings.Length; i++)
                             command.Parameters[param[i]].Value = mappings[i].CLRProperty.Get?.Invoke(entity); // ?.MakeSQLValueLiteral();
                         count += command.ExecuteNonQuery();
@@ -81,6 +72,7 @@ namespace RESTar.SQLite
             var sqlStub = $"UPDATE {TableMapping<T>.TableName} SET ";
             Db.Transact(command => updatedEntities.ForEach(updatedEntity =>
             {
+                updatedEntity._OnUpdate();
                 command.CommandText = $"{sqlStub} {updatedEntity.ToSQLiteUpdateSet()} WHERE RowId={updatedEntity.RowId}";
                 count += command.ExecuteNonQuery();
             }));
@@ -100,25 +92,8 @@ namespace RESTar.SQLite
             var count = 0;
             Db.Transact(command => entities.ForEach(entity =>
             {
+                entity._OnDelete();
                 command.CommandText = sqlstub + entity.RowId;
-                count += command.ExecuteNonQuery();
-            }));
-            return count;
-        }
-
-        /// <summary>
-        /// Deletes the corresponding SQLite database table rows for a given IEnumerable 
-        /// of entities, and returns the number of database rows affected.
-        /// </summary>
-        /// <returns></returns>
-        public static int Delete(IEnumerable<long> rowIds)
-        {
-            if (rowIds == null) return 0;
-            var sqlstub = $"DELETE FROM {TableMapping<T>.TableName} WHERE RowId=";
-            var count = 0;
-            Db.Transact(command => rowIds.ForEach(rowId =>
-            {
-                command.CommandText = sqlstub + rowId;
                 count += command.ExecuteNonQuery();
             }));
             return count;

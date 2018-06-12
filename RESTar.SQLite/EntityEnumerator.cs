@@ -54,15 +54,18 @@ namespace RESTar.SQLite
         {
             var entity = Constructor();
             entity.RowId = Reader.GetInt64(0);
-            if (OnlyRowId) return entity;
-            foreach (var column in TableMapping<T>.TransactMappings)
+            if (!OnlyRowId)
             {
-                var value = Reader[column.SQLColumn.Name];
-                if (!(value is DBNull))
-                    column.CLRProperty.Set?.Invoke(entity, value);
-                else if (!column.CLRProperty.IsDeclared)
-                    column.CLRProperty.Set?.Invoke(entity, null);
+                foreach (var column in TableMapping<T>.TransactMappings)
+                {
+                    var value = Reader[column.SQLColumn.Name];
+                    if (!(value is DBNull))
+                        column.CLRProperty.Set?.Invoke(entity, value);
+                    else if (!column.CLRProperty.IsDeclared)
+                        column.CLRProperty.Set?.Invoke(entity, null);
+                }
             }
+            entity._OnSelect();
             return entity;
         }
     }

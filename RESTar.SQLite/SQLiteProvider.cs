@@ -141,7 +141,7 @@ namespace RESTar.SQLite
                     $"Could not locate basetype '{resource.BaseTypeName}' when building procedural resource '{resource.Name}'. " +
                     "Was the assembly modified between builds?");
             TableMapping.Create(resourceType);
-            SQLite<ProceduralResource>.Insert(resource);
+            SQLite<ProceduralResource>.Insert(new[] {resource});
             return resource;
         }
 
