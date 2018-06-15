@@ -71,6 +71,8 @@ var productId = product.ProductId; // Static property access
 var description = product["Description"]; // Dynamic property access. Will return null if no such property.
 ```
 
+For more information, see the [Advanced](#advanced) section below.
+
 ### Using SQLite table mappings with RESTar
 
 To register a RESTar.SQLite table mapping as a RESTar resource, we need to **add two attributes to its C# class definition** – the `RESTar.Resources.RESTarAttribute` and the `RESTar.SQLite.SQLiteAttribute`. The first tells RESTar to treat this class as a RESTar resource, and is used in all RESTar resource registrations. The second is the resource provider attribute associated with the `RESTar.SQLite.SQLiteProvider` resource provider, and instructs RESTar to associate the table mapping with the resource operations defined by that resource provider.
@@ -185,3 +187,44 @@ EPPlus
 System.Data.SQLite
 SQLite.Interop
 ```
+
+## Advanced
+
+### The `TableMapping` resource
+
+RESTar.SQLite registers a RESTar resource `RESTar.SQLite.Meta.TableMapping` that can be used to read the current table mappings, which is useful when debugging and testing mappings. There is also a RESTar [terminal resource](https://github.com/Mopedo/Home/tree/master/RESTar/Terminal%20resources) `RESTar.SQLite.Meta.TableMapping.Options` that allows you to update the mappings during runtime – which is needed if changes are made to the SQLite database while the RESTar application is running.
+
+### Controlling elastic table mappings
+
+The abstract `RESTar.SQLite.ElasticSQLiteTableController` class can be subclassed to create a controller for a given elastic table type. This controller can then select table mappings and add and remove column mappings during runtime. You can easily register an elastic table controller as a RESTar resource, by just adding the `RESTarAttribute` to its definition, which lets REST clients modify the structure of elastic tables.
+
+### Procedural elastic table mappings
+
+You can add additional elastic table mappings, and corresponding RESTar resources, during runtime, by subclassing the `RESTar.SQLite.SQLiteResourceController` class. It defines a resource controller with RESTar, that allows runtime insertions of resources. To make it work, you need to define a subclass of `ElasticSQLiteTable` that has at least one public instance auto-implemented property, and use that type as the second generic type argument in the `SQLiteResourceController` definition. Each runtime resource will create a new subclass of this elastic table type during runtime.
+
+### Customizing column mappings
+
+To change how RESTar.SQLite reads the defined column mappings from a C# class definition, use the `RESTar.SQLite.SQLiteMemberAttribute`. It allows you to change the name of the corresponding column, or ignore the property altogether.
+
+#### Example
+
+```csharp
+public class Product : SQLiteTable
+{
+    public string ProductId { get; set; }
+
+    [SQLiteMember(columnName: "In_Stock")]
+    public int InStock { get; set; }
+
+    [SQLiteMember(ignore: true)]
+    public decimal NetPriceUsd { get; set; }
+
+    public DateTime RegistrationDate { get; set; }
+}
+```
+
+Name             | Type
+---------------- | ----------
+ProductId        | `TEXT`
+In_Stock         | `INT`
+RegistrationDate | `DATETIME`

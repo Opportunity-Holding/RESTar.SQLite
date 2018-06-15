@@ -28,7 +28,7 @@ namespace RESTarTutorial
                 configFilePath: projectFolder + "/Config.xml",
                 entityResourceProviders: new[] {new SQLiteProvider(projectFolder, "data_debug")}
             );
-            
+
             // The 'port' argument sets the HTTP port on which to register the REST handlers
             // The 'uri' argument sets the root uri of the REST API
             // The 'requireApiKey' parameter is set to 'true'. API keys are required in all incoming requests.
@@ -110,21 +110,13 @@ namespace RESTarTutorial
         public int Year { get; set; }
     }
 
-    [SQLite, RESTar]
-    public class MyElastic : ElasticSQLiteTable
+    public abstract class MyElastic : ElasticSQLiteTable
     {
         public string Name { get; set; }
         public int Id { get; set; }
         public Settings Settings => Settings.Instance;
 
         public DateTime Time { get; set; } = DateTime.UtcNow;
-
-        [SQLite, RESTar]
-        public class MyOtherElastic : ElasticSQLiteTable
-        {
-            public string Name { get; set; }
-            public int Id { get; set; }
-        }
     }
 
     [RESTar]
