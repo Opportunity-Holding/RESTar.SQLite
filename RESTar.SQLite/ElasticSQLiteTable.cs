@@ -14,7 +14,11 @@ namespace RESTar.SQLite
         /// <summary>
         /// The dynamic members stored for this instance
         /// </summary>
-        [SQLiteMember(ignore: true), RESTarMember(hide: true), JsonExtensionData(ReadData = true, WriteData = true)]
+        [
+            SQLiteMember(ignore: true),
+            RESTarMember(hide: true),
+            JsonExtensionData(ReadData = true, WriteData = true)
+        ]
         public DynamicMemberCollection DynamicMembers { get; }
 
         /// <summary>

@@ -18,36 +18,68 @@ Install-Package RESTar.SQLite
 
 RESTar.SQLite defines a **resource provider** for RESTar, which should be included in the call to `RESTarConfig.Init()` in applications that wish to use it. Resource providers are essentially add-ons for RESTar, enabling – for example – database technologies like SQLite to work with RESTar just like native database technologies like Starcounter. For more on resource providers, see the [RESTar Specification](https://github.com/Mopedo/Home/blob/master/RESTar/Developing%20a%20RESTar%20API/Developing%20entity%20resources/Resource%20providers.md).
 
-### Resource declarations
+### Table declarations
 
-All SQLite resources are classes, and need to (1) be decorated with the `SQLiteAttribute` and (2) inherit from the abstract class `SQLiteTable`. This is important to ensure that RESTar.SQLite can do O/R mapping between the SQLite tables and the object model defined in the RESTar application. During startup, RESTar will collect and validate these resource types and make them available in the REST API.
+SQLite is a hard-disk based relational database with an SQL interface, with each database contained in a file, commonly with the `.sqlite` extension on the local hard drive. RESTar.SQLite creates **table mappings** between classes in your C# project, and tables in an SQLite database. Each table mapping contains a set of **column mappings**, mapping columns in the SQLite table with C# class properties. There are two main kinds of table mappings in RESTar.SQLite:
 
-A simple example resource:
+#### Static table mappings
+
+Static table mappings have all their column mappings defined in compile-time. Mappings are created left-to-right, so to speak, with all public instance auto-implemented properties of the C# class are mapped to corresponding columns in an SQLite table. Any SQLite table column not mapped by this left-to-right mapping are ignored.
+
+##### Example
+
+The following C# class:
 
 ```csharp
-using System;
-using RESTar;
-using RESTar.SQLite;
-
-[SQLite, RESTar]
-public class MySQLiteProduct : SQLiteTable
+public class Product : SQLiteTable
 {
-    [Column] public string ProductId { get; set; }
-    [Column] public int InStock { get; set; }
-    [Column] public decimal NetPriceUsd { get; set; }
-    [Column] public DateTime RegistrationDate { get; set; }
-
-    public bool ImportedFromOldDb => ProductId.StartsWith("OLD_");
-    public bool InShortSupply => InStock < 10;
-    public int DaysSinceRegistration => (DateTime.Now - RegistrationDate).Days;
+    public string ProductId { get; set; }
+    public int InStock { get; set; }
+    public decimal NetPriceUsd { get; set; }
+    public DateTime RegistrationDate { get; set; }
 }
 ```
 
-Public instance properties decorated with the `ColumnAttribute` attribute will automatically be bound to corresponding columns in an SQLite table. Public instance properties not decorated with the `ColumnAttribute` will not have corresponding columns in the generated SQLite database table, but can still be referenced in RESTar requests as any regular property.
+Would create the following SQLite table, with table mappings from each property to the column with the same name:
+
+Name             | Type
+---------------- | ----------
+ProductId        | `TEXT`
+InStock          | `INT`
+NetPriceUsd      | `DECIMAL`
+RegistrationDate | `DATETIME`
+
+#### Elastic table mappings
+
+Elastic table mappings have a subset of their column mappings defined in compile-time, with the ability to add and remove additional mappings during runtime. Here, mappings are first made left-to-right, with each public instance auto-implemented property of the C# class mapped to an SQLite table column. Then each unmapped SQLite column is mapped right-to-left to a dynamic property of the C# class. To create an elastic table mapping, have the C# class inherit from the `RESTar.SQLite.ElasticSQLiteTable` class.
+
+```csharp
+public class Product : ElasticSQLiteTable
+{
+    public string ProductId { get; set; }
+    public int InStock { get; set; }
+    public decimal NetPriceUsd { get; set; }
+    public DateTime RegistrationDate { get; set; }
+}
+```
+
+The public instance auto-implemented properties above will be immutable during runtime, and all dynamic properties and values will be accessible from the inherited indexer.
+
+```csharp
+var product = SQLite<SQLiteResource>.Select().FirstOrDefault();
+var productId = product.ProductId; // Static property access
+var description = product["Description"]; // Dynamic property access. Will return null if no such property.
+```
+
+### Using SQLite table mappings with RESTar
+
+To register a RESTar.SQLite table mapping as a RESTar resource, we need to **add two attributes to its C# class definition** – the `RESTar.Resources.RESTarAttribute` and the `RESTar.SQLite.SQLiteAttribute`. The first tells RESTar to treat this class as a RESTar resource, and is used in all RESTar resource registrations. The second is the resource provider attribute associated with the `RESTar.SQLite.SQLiteProvider` resource provider, and instructs RESTar to associate the table mapping with the resource operations defined by that resource provider.
+
+The `RESTar.SQLite.SQLiteAttribute` attribute also allows us to set a custom table name for the table mapping, which is useful when mapping against an existing SQLite database.
 
 ### Data types
 
-The following .NET data types are allowed in RESTar.SQLite resource types:
+The following C# data types are allowed in RESTar.SQLite table mappings:
 
 ```
 System.Byte
@@ -60,6 +92,21 @@ System.Boolean
 System.DateTime
 System.Nullable<T> // where T is one of the types above
 System.String
+```
+
+When mapping SQLite table columns to an elastic table mapping, the following SQL data types are allowed:
+
+```
+SMALLINT
+INT
+BIGINT
+SINGLE
+DOUBLE
+DECIMAL
+TINYINT
+TEXT
+BOOLEAN
+DATETIME
 ```
 
 ### Instantiating the resource provider
@@ -83,27 +130,27 @@ public class Program
 
 The database name may only contain letters, numbers and underscores. If there is no directory matching the database directory given in the `SQLiteProvider` constructor, it will be created automatically. The database file will be placed in the given `databaseDirectory` directory and have the filename `<databaseName>.sqlite`. Any existing file in the directory with that name will be reused.
 
-### Resource validation rules
+### Table mapping validation rules
 
-Apart from the rules defined by RESTar, RESTar.SQLite resource types must be classes and:
+RESTar.SQLite table mappings must be defined as classes that:
 
-1. Be decorated with the `SQLiteAttribute` attribute.
-2. Inherit from the abstract class `SQLiteTable`.
-3. Contain at least one public instance property declared as column using the `ColumnAttribute`.
-4. Have a public parameterless constructor – if the resource supports POST
-5. Not contain any property with the name `RowId`, including any case variants.
+1. Inherit from the abstract classes `SQLiteTable` or `ElasticSQLiteTable`.
+2. Contain at least one public instance auto-implemented property with a public getter and setter accessor.
+3. Have a public parameterless constructor.
+4. Not contain any property with the name `RowId`, including any case variants.
+5. Do not contain any two properties with the same case insensitive name.
 
 ## Database management
 
-RESTar.SQLite will create a new `.sqlite3` file in the directory provided in the `SQLiteProvider` constructor, with the given database name (unless one already exists). This file contains all tables used by RESTar.SQLite. If the name and/or directory is changed, RESTar.SQLite will simply create a new database file and any old data will be unreachable. There are some important things to keep in mind regarding how RESTar.SQLite works with the SQLite database:
+RESTar.SQLite will create a new `.sqlite` file in the directory provided in the `SQLiteProvider` constructor, with the given database name (unless one already exists). This file contains all tables used by RESTar.SQLite. If the name and/or directory is changed, RESTar.SQLite will simply create a new database file and any old data will be unreachable. There are some important things to keep in mind regarding how RESTar.SQLite works with the SQLite database:
 
-1. During execution of `RESTarConfig.Init()`, RESTar.SQLite will create one table for each well-defined RESTar.SQLite resource type, if one with the same name does not already exist.
-2. If properties are added to some well-defined RESTar.SQLite resource type between two executions of `RESTarConfig.Init()`, they will be added to the corresponding SQLite table.
-3. If property types are changed in some well-defined RESTar.SQLite resource type between two executions of `RESTarConfig.Init()`, you will see a runtime error. Such table alterations cannot be handled automatically. Instead you should load the SQLite file manually and perform the necessary operations there.
-4. If properties are removed from some resource type between two executions of `RESTarConfig.Init()`, they will not be removed from the corresponding SQLite table.
-5. RESTar.SQLite never drops tables from the SQLite database.
+1. During execution of `RESTarConfig.Init()`, RESTar.SQLite will create one table for each well-defined RESTar.SQLite table mapping, if one with the same name does not already exist.
+2. If public instance auto-implemented properties are added to some well-defined RESTar.SQLite resource type between two executions of `RESTarConfig.Init()`, corresponding SQLite columns will be added to the table.
+3. If property data types are changed in some well-defined RESTar.SQLite resource type between two executions of `RESTarConfig.Init()`, you will see a runtime error. Such table alterations cannot be handled automatically. Instead you should load the SQLite file manually and perform the necessary `ALTER TABLE` operations there.
+4. If properties are removed from some resource type between two executions of `RESTarConfig.Init()`, their corresponding SQLite table columns will not be dropped.
+5. RESTar.SQLite never automatically drops tables from the SQLite database.
 
-For operations on the SQLite database that are not performed by RESTar.SQLite, the developer is encouraged to manually connect to the SQLite database. The connection string is available as a public static property of the `RESTar.SQLite.Settings` class.
+For operations on the SQLite database that are not performed by RESTar.SQLite, the developer is encouraged to manually connect to the SQLite database. The connection string is available as a public static property of the `RESTar.SQLite.Settings` class, and the System.Data.SQLite package is [well documented](https://system.data.sqlite.org/index.html/doc/trunk/www/index.wiki).
 
 ### Helper methods
 
@@ -116,7 +163,7 @@ RESTar.SQLite is integrated with the RESTar `DatabaseIndex` resource, and can cr
 ```json
 {
     "Name": "MyIndexName",
-    "Table": "MySQLiteProduct",
+    "ResourceName": "MySQLiteProduct",
     "Columns": [{
         "Name": "MyColumnName",
         "Descending": false
@@ -124,19 +171,16 @@ RESTar.SQLite is integrated with the RESTar `DatabaseIndex` resource, and can cr
 }
 ```
 
-If the `Table` property refers to a SQLite resource, the index will be registered on the SQLite database table.
+If the `ResourceName` property refers to a SQLite resource, the index will be registered on the SQLite database table. As with all RESTar database indexes, only `SQLiteTable` classes that are registered as RESTar resources can be indexed using `RESTar.Admin.DatabaseIndex`.
 
 ## weaver.ignore
 
-Add the following rows to the project's `weaver.ignore` file when using RESTar.SQLite (the first 6 are required by RESTar).
+Add the following rows to the project's `weaver.ignore` file when using RESTar.SQLite (the first 3 are required by RESTar).
 
 ```
 Newtonsoft.Json
-DocumentFormat.OpenXML
-ClosedXml
-Excel
 System.ValueTuple
-FastMember.Signed
+EPPlus
 
 System.Data.SQLite
 SQLite.Interop
