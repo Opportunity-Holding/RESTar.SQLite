@@ -54,25 +54,44 @@ namespace RESTar.SQLite
         /// <inheritdoc />
         protected override IDatabaseIndexer DatabaseIndexer { get; }
 
-        /// <inheritdoc />
-        public SQLiteProvider(string databaseDirectory, string databaseName)
+        /// <summary>
+        /// Creates a new instance of the SQLiteProvider class, for use in calls to RESTarConfig.Init()
+        /// </summary>
+        /// <param name="databasePath">A path to the SQLite database file to use with RESTar.SQLite. If no
+        /// such file exists, one will be created.</param>
+        public SQLiteProvider(string databasePath)
         {
-            if (!Regex.IsMatch(databaseName, @"^[a-zA-Z0-9_]+$"))
-                throw new SQLiteException($"SQLite database name '{databaseName}' contains invalid characters: " +
-                                          "Only letters, numbers and underscores are valid in SQLite database names.");
-            var databasePath = $"{databaseDirectory}\\{databaseName}.sqlite";
-            if (!Directory.Exists(databaseDirectory))
-                Directory.CreateDirectory(databaseDirectory);
-            if (!File.Exists(databasePath))
-                SQLiteConnection.CreateFile(databasePath);
+            if (string.IsNullOrWhiteSpace(databasePath))
+                throw new SQLiteException("The SQLite database path cannot be null, empty or whitespace");
+            var (directory, fileName, extension) = (Path.GetDirectoryName(databasePath), Path.GetFileNameWithoutExtension(databasePath),
+                Path.GetExtension(databasePath));
+            if (string.IsNullOrWhiteSpace(extension))
+            {
+                if (Directory.Exists(databasePath))
+                    throw new SQLiteException(
+                        $"The SQLite database path '{databasePath}' was invalid. Must be an absolute file path, " +
+                        "including file name. Found reference to folder.");
+                databasePath += ".sqlite";
+            }
+
+            if (string.IsNullOrWhiteSpace(directory))
+                throw new SQLiteException(
+                    $"The SQLite database path '{databasePath}' was invalid. Must be an absolute file path, including file name.");
+            if (!Regex.IsMatch(fileName, @"^[a-zA-Z0-9_]+$"))
+                throw new SQLiteException($"SQLite database file name '{fileName}' contains invalid characters: " +
+                                          "Only letters, numbers and underscores are valid in SQLite database file names.");
+
+            if (!Directory.Exists(directory)) Directory.CreateDirectory(directory);
+            if (!File.Exists(databasePath)) SQLiteConnection.CreateFile(databasePath);
+
             Starcounter.Db.TransactAsync(() =>
             {
                 Settings.All.ForEach(Starcounter.Db.Delete);
                 new Settings
                 {
                     DatabasePath = databasePath,
-                    DatabaseDirectory = databaseDirectory,
-                    DatabaseName = databaseName,
+                    DatabaseDirectory = directory,
+                    DatabaseName = fileName,
                     DatabaseConnectionString = $"Data Source={databasePath};Version=3;"
                 };
             });
