@@ -120,17 +120,13 @@ public class Program
 {
     public static void Main()
     {
-        var sqliteProvider = new SQLiteProvider
-        (
-            databaseDirectory: @"C:\MyDb",
-            databaseName: "MyDatabaseName"
-        );
+        var sqliteProvider = new SQLiteProvider(@"C:\MyDb\MyDatabaseName.sqlite");
         RESTarConfig.Init(resourceProviders: new [] {sqliteProvider});
     }
 }
 ```
 
-The database name may only contain letters, numbers and underscores. If there is no directory matching the database directory given in the `SQLiteProvider` constructor, it will be created automatically. The database file will be placed in the given `databaseDirectory` directory and have the filename `<databaseName>.sqlite`. Any existing file in the directory with that name will be reused.
+The database name may only contain letters, numbers and underscores. If there is no directory matching the path given in the `SQLiteProvider` constructor, it will be created automatically. The database file will be created if it does not already exist. Any existing file in the directory with that name will be reused.
 
 ### Table mapping validation rules
 
