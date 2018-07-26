@@ -35,12 +35,13 @@ namespace RESTar.SQLite.Meta
         /// <summary>
         /// Creates a new SQLColumn instance
         /// </summary>
-        public SQLColumn(string name, SQLDataType type)
+        public SQLColumn(string name, SQLDataType type, Type parentType = null, Type propertyType = null)
         {
             Name = name;
             IsRowId = name.EqualsNoCase("rowid");
             if (type == SQLDataType.Unsupported)
-                throw new InvalidOperationException($"An SQL column '{Name}' was created with an unsupported data type");
+                throw new InvalidOperationException($"An SQL column '{Name}' was created for CLR type '{parentType}' " +
+                                                    $"with an unsupported data type '{propertyType}'");
             Type = type;
             DbType = type.ToDbTypeCode();
         }

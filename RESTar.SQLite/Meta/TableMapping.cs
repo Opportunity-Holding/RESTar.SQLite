@@ -293,7 +293,9 @@ namespace RESTar.SQLite.Meta
                 sqlColumn: new SQLColumn
                 (
                     name: property.MemberAttribute?.ColumnName ?? property.Name,
-                    type: property.Type.ToSQLDataType()
+                    type: property.Type.ToSQLDataType(),
+                    parentType: CLRClass,
+                    propertyType: property._Type
                 )
             ))
             .ToColumnMappings();

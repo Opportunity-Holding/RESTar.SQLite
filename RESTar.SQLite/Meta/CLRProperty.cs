@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
 using RESTar.Meta;
 using RESTar.Resources;
 
@@ -42,6 +43,11 @@ namespace RESTar.SQLite.Meta
         [RESTarMember(ignore: true)] public Setter Set { get; }
 
         /// <summary>
+        /// The CLR type of this property, used for internal traceability
+        /// </summary>
+        internal Type _Type { get; }
+
+        /// <summary>
         /// The optional SQLiteMemberAttribute associated with this CLR property
         /// </summary>
         public SQLiteMemberAttribute MemberAttribute { get; }
@@ -66,6 +72,7 @@ namespace RESTar.SQLite.Meta
             Set = propertyInfo.MakeDynamicSetter();
             MemberAttribute = propertyInfo.GetCustomAttribute<SQLiteMemberAttribute>();
             IsDeclared = true;
+            _Type = propertyInfo.PropertyType;
         }
 
         /// <summary>
