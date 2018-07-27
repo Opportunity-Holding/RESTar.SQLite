@@ -70,7 +70,7 @@ namespace RESTar.SQLite
             }
         }
 
-        internal static DbType ToDbTypeCode(this SQLDataType sqlDataType)
+        internal static DbType? ToDbTypeCode(this SQLDataType sqlDataType)
         {
             switch (sqlDataType)
             {
@@ -84,7 +84,7 @@ namespace RESTar.SQLite
                 case SQLDataType.TEXT: return DbType.String;
                 case SQLDataType.BOOLEAN: return DbType.Boolean;
                 case SQLDataType.DATETIME: return DbType.DateTime;
-                default: return default;
+                default: return null;
             }
         }
 

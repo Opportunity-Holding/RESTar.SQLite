@@ -148,8 +148,10 @@ namespace RESTar.SQLite.Meta
         public class Options : OptionsTerminal
         {
             /// <inheritdoc />
-            protected override IEnumerable<Option> GetOptions() => new[]
-                {new Option("Update", "Updates all table mappings", _ => TableMappingByType.Values.ForEach(m => m.Update()))};
+            protected override IEnumerable<Option> GetOptions()
+            {
+                return new[] {new Option("Update", "Updates all table mappings", _ => TableMappingByType.Values.ForEach(m => m.Update()))};
+            }
         }
 
         #endregion
@@ -199,15 +201,13 @@ namespace RESTar.SQLite.Meta
 
         private HashSet<string> MakeColumnNames()
         {
-            var columnNames = new HashSet<string>(ColumnMappings.Select(c => c.SQLColumn.Name), StringComparer.OrdinalIgnoreCase);
-
-            var definedColumns = ColumnMappings.Where(m => !m.IsRowId).ToArray();
-            var columns = string.Join(", ", definedColumns.Select(c => c.SQLColumn.Name));
-            var mappings = definedColumns;
-            var param = definedColumns.Select(c => $"@{c.SQLColumn.Name}").ToArray();
+            var allColumns = new HashSet<string>(ColumnMappings.Select(c => c.SQLColumn.Name), StringComparer.OrdinalIgnoreCase);
+            var notRowId = ColumnMappings.Where(m => !m.IsRowId).ToArray();
+            var columns = string.Join(", ", notRowId.Select(c => c.SQLColumn.Name));
+            var mappings = notRowId;
+            var param = notRowId.Select(c => $"@{c.SQLColumn.Name}").ToArray();
             InsertSpec = (TableName, columns, param, mappings);
-
-            return columnNames;
+            return allColumns;
         }
 
         private void DropTable()
@@ -290,13 +290,7 @@ namespace RESTar.SQLite.Meta
             (
                 tableMapping: this,
                 clrProperty: property,
-                sqlColumn: new SQLColumn
-                (
-                    name: property.MemberAttribute?.ColumnName ?? property.Name,
-                    type: property.Type.ToSQLDataType(),
-                    parentType: CLRClass,
-                    propertyType: property._Type
-                )
+                sqlColumn: new SQLColumn(property.MemberAttribute?.ColumnName ?? property.Name, property.Type.ToSQLDataType())
             ))
             .ToColumnMappings();
 

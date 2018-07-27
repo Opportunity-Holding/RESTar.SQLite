@@ -41,7 +41,7 @@ namespace RESTar.SQLite
             {
                 command.CommandText = $"INSERT INTO {name} ({columns}) VALUES ({string.Join(", ", param)})";
                 for (var i = 0; i < mappings.Length; i++)
-                    command.Parameters.Add(param[i], mappings[i].SQLColumn.DbType);
+                    command.Parameters.Add(param[i], mappings[i].SQLColumn.DbType.GetValueOrDefault());
                 try
                 {
                     foreach (var entity in entities)

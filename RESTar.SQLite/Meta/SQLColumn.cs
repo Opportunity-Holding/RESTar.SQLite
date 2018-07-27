@@ -2,6 +2,7 @@
 using System.Data;
 using RESTar.Resources;
 using static System.StringComparison;
+using static RESTar.SQLite.SQLDataType;
 
 namespace RESTar.SQLite.Meta
 {
@@ -25,7 +26,7 @@ namespace RESTar.SQLite.Meta
         /// <summary>
         /// The type of the column, as defined in System.Data
         /// </summary>
-        internal DbType DbType { get; }
+        internal DbType? DbType { get; }
 
         /// <summary>
         /// Does this instance represent the RowId SQLite column?
@@ -35,13 +36,10 @@ namespace RESTar.SQLite.Meta
         /// <summary>
         /// Creates a new SQLColumn instance
         /// </summary>
-        public SQLColumn(string name, SQLDataType type, Type parentType = null, Type propertyType = null)
+        public SQLColumn(string name, SQLDataType type)
         {
             Name = name;
             IsRowId = name.EqualsNoCase("rowid");
-            if (type == SQLDataType.Unsupported)
-                throw new InvalidOperationException($"An SQL column '{Name}' was created for CLR type '{parentType}' " +
-                                                    $"with an unsupported data type '{propertyType}'");
             Type = type;
             DbType = type.ToDbTypeCode();
         }
