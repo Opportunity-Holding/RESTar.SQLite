@@ -10,43 +10,10 @@ using RESTar.Requests;
 using RESTar.Resources;
 using RESTar.Resources.Operations;
 using RESTar.Resources.Templates;
-using static RESTar.SQLite.TableMappingKind;
+using RESTar.SQLite.Meta;
 
-namespace RESTar.SQLite.Meta
+namespace RESTar.SQLite
 {
-    /// <summary>
-    /// A static class for accessing table mappings
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public static class TableMapping<T> where T : SQLiteTable
-    {
-        private static TableMapping mapping;
-
-        /// <summary>
-        /// Gets the table mapping for the given type
-        /// </summary>
-        public static TableMapping Get => mapping ?? (mapping = TableMapping.Get(typeof(T)));
-
-        /// <summary>
-        /// Gets the name from the table mapping for the given type
-        /// </summary>
-        public static string TableName => Get.TableName;
-
-        /// <summary>
-        /// Gets the column mappings from the table mapping for the given type
-        /// </summary>
-        public static ColumnMappings ColumnMappings => Get.ColumnMappings;
-
-        internal static (string name, string columns, string[] param, ColumnMapping[] mappings) InsertSpec => Get.InsertSpec;
-
-        internal static IEnumerable<ColumnMapping> TransactMappings => Get.TransactMappings;
-
-        /// <summary>
-        /// Gets the column names from the table mapping for the given type
-        /// </summary>
-        internal static HashSet<string> SQLColumnNames => mapping.SQLColumnNames;
-    }
-
     /// <inheritdoc />
     /// <summary>
     /// Represents a mapping between a CLR class and an SQLite table
@@ -162,7 +129,7 @@ namespace RESTar.SQLite.Meta
         private TableMapping(Type clrClass)
         {
             Validate(clrClass);
-            TableMappingKind = clrClass.IsSubclassOf(typeof(ElasticSQLiteTable)) ? Elastic : Static;
+            TableMappingKind = clrClass.IsSubclassOf(typeof(ElasticSQLiteTable)) ? TableMappingKind.Elastic : TableMappingKind.Static;
             IsDeclared = !clrClass.Assembly.Equals(TypeBuilder.Assembly);
             CLRClass = clrClass;
             TableName = clrClass.GetCustomAttribute<SQLiteAttribute>()?.CustomTableName ?? clrClass.FullName?.Replace('+', '.').Replace('.', '$')

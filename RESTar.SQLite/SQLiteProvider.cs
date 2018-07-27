@@ -8,7 +8,6 @@ using RESTar.Linq;
 using RESTar.Meta;
 using RESTar.Requests;
 using RESTar.Resources;
-using RESTar.SQLite.Meta;
 
 namespace RESTar.SQLite
 {
