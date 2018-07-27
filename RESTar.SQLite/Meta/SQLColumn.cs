@@ -2,7 +2,6 @@
 using System.Data;
 using RESTar.Resources;
 using static System.StringComparison;
-using static RESTar.SQLite.SQLDataType;
 
 namespace RESTar.SQLite.Meta
 {
