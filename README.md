@@ -2,7 +2,7 @@ _By Erik von Krusenstierna (erik.von.krusenstierna@mopedo.com)_
 
 # What is RESTar.SQLite?
 
-RESTar.SQLite is a free to use open-source resource provider for [RESTar](https://github.com/Mopedo/Home/tree/master/RESTar) that integrates the [System.Data.SQLite](https://system.data.sqlite.org/index.html/doc/trunk/www/index.wiki) .NET library with the RESTar framework and enables web resources that use SQLite as the underlying persistent data storage. This means that developers can use SQLite tables as resources for their RESTar applications, just like they can use Starcounter database tables.
+RESTar.SQLite is a free to use open-source resource provider for [RESTar](https://develop.mopedo.com/RESTar) that integrates the [System.Data.SQLite](https://system.data.sqlite.org/index.html/doc/trunk/www/index.wiki) .NET library with the RESTar framework and enables web resources that use SQLite as the underlying persistent data storage. This means that developers can use SQLite tables as resources for their RESTar applications, just like they can use Starcounter database tables.
 
 This documentation will cover the basics of RESTar.SQLite and how to set it up in a Visual Studio project.
 
@@ -16,7 +16,7 @@ Install-Package RESTar.SQLite
 
 ## Using RESTar.SQLite
 
-RESTar.SQLite defines a **resource provider** for RESTar, which should be included in the call to `RESTarConfig.Init()` in applications that wish to use it. Resource providers are essentially add-ons for RESTar, enabling – for example – database technologies like SQLite to work with RESTar just like native database technologies like Starcounter. For more on resource providers, see the [RESTar Specification](https://github.com/Mopedo/Home/blob/master/RESTar/Developing%20a%20RESTar%20API/Developing%20entity%20resources/Resource%20providers.md).
+RESTar.SQLite defines a **resource provider** for RESTar, which should be included in the call to `RESTarConfig.Init()` in applications that wish to use it. Resource providers are essentially add-ons for RESTar, enabling – for example – database technologies like SQLite to work with RESTar just like native database technologies like Starcounter. For more on resource providers, see the [RESTar Specification](https://develop.mopedo.com/RESTar/Developing%20a%20RESTar%20API/Developing%20entity%20resources/Resource%20providers/).
 
 ### Table declarations
 
@@ -188,7 +188,7 @@ SQLite.Interop
 
 ### The `TableMapping` resource
 
-RESTar.SQLite registers a RESTar resource `RESTar.SQLite.Meta.TableMapping` that can be used to read the current table mappings, which is useful when debugging and testing mappings. There is also a RESTar [terminal resource](https://github.com/Mopedo/Home/tree/master/RESTar/Terminal%20resources) `RESTar.SQLite.Meta.TableMapping.Options` that allows you to update the mappings during runtime – which is needed if changes are made to the SQLite database while the RESTar application is running.
+RESTar.SQLite registers a RESTar resource `RESTar.SQLite.Meta.TableMapping` that can be used to read the current table mappings, which is useful when debugging and testing mappings. There is also a RESTar [terminal resource](https://develop.mopedo.com/RESTar/Consuming%20a%20RESTar%20API/Consuming%20terminal%20resources/) `RESTar.SQLite.Meta.TableMapping.Options` that allows you to update the mappings during runtime – which is needed if changes are made to the SQLite database while the RESTar application is running.
 
 ### Controlling elastic table mappings
 
