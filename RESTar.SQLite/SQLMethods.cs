@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Text;
 using RESTar.Requests;
-using RESTar.SQLite.Meta;
 using static RESTar.Requests.Operators;
 
 namespace RESTar.SQLite
@@ -107,7 +105,7 @@ namespace RESTar.SQLite
             }
         }
 
-        internal static string MakeSQLValueLiteral(this object o)
+        private static string MakeSQLValueLiteral(this object o)
         {
             switch (o)
             {
@@ -159,32 +157,5 @@ namespace RESTar.SQLite
             }));
             return string.IsNullOrWhiteSpace(values) ? null : "WHERE " + values;
         }
-
-        internal static string ToSQLiteInsertValues<T>(this T entity) where T : SQLiteTable
-        {
-            var total = new StringBuilder("(");
-            var literals = new StringBuilder("(");
-            var first = true;
-            foreach (var mapping in TableMapping<T>.ColumnMappings.Where(m => !m.IsRowId))
-            {
-                if (!first)
-                {
-                    total.Append(',');
-                    literals.Append(',');
-                }
-                total.Append(mapping.SQLColumn.Name);
-                literals.Append(MakeSQLValueLiteral((object) mapping.CLRProperty.Get?.Invoke(entity)));
-                first = false;
-            }
-            total.Append(") VALUES ");
-            literals.Append(")");
-            total.Append(literals);
-            return total.ToString();
-        }
-
-        internal static string ToSQLiteUpdateSet<T>(this T entity) where T : SQLiteTable => string.Join(",",
-            TableMapping<T>.ColumnMappings
-                .Where(m => !m.IsRowId)
-                .Select(c => $"{c.SQLColumn.Name}={MakeSQLValueLiteral((object) c.CLRProperty.Get?.Invoke(entity))}"));
     }
 }

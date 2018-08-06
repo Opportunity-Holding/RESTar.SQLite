@@ -78,7 +78,7 @@ namespace RESTar.SQLite
             get
             {
                 var results = 0;
-                Db.Query($"PRAGMA table_info({TableName})", rowAction: row => results += 1);
+                Database.Query($"PRAGMA table_info({TableName})", rowAction: row => results += 1);
                 return results > 0;
             }
         }
@@ -98,6 +98,7 @@ namespace RESTar.SQLite
         internal HashSet<string> SQLColumnNames { get; private set; }
 
         internal (string name, string columns, string[] param, ColumnMapping[] mappings) InsertSpec { get; private set; }
+        internal (string name, string set, string[] param, ColumnMapping[] mappings) UpdateSpec { get; private set; }
 
         #region RESTar
 
@@ -135,7 +136,7 @@ namespace RESTar.SQLite
             TableName = clrClass.GetCustomAttribute<SQLiteAttribute>()?.CustomTableName ?? clrClass.FullName?.Replace('+', '.').Replace('.', '$')
                         ?? throw new SQLiteException("RESTar.SQLite encountered an unknown CLR class when creating table mappings");
             TableMappingByType[CLRClass] = this;
-            if (!Exists) Db.Query(GetCreateTableSQL());
+            if (!Exists) Database.Query(GetCreateTableSQL());
             Update();
         }
 
@@ -173,13 +174,15 @@ namespace RESTar.SQLite
             var columns = string.Join(", ", notRowId.Select(c => c.SQLColumn.Name));
             var mappings = notRowId;
             var param = notRowId.Select(c => $"@{c.SQLColumn.Name}").ToArray();
+            var set = string.Join(", ", notRowId.Select(c => $"{c.SQLColumn.Name} = @{c.SQLColumn.Name}"));
             InsertSpec = (TableName, columns, param, mappings);
+            UpdateSpec = (TableName, set, param, mappings);
             return allColumns;
         }
 
         private void DropTable()
         {
-            Db.Query($"DROP TABLE IF EXISTS {TableName}");
+            Database.Query($"DROP TABLE IF EXISTS {TableName}");
             RemoveTable(this);
         }
 
@@ -209,7 +212,7 @@ namespace RESTar.SQLite
                 .EvaluateToEntities()
                 .Where(index => !index.Columns.Any(column => mappings.Any(mapping => column.Name.EqualsNoCase(mapping.SQLColumn.Name))))
                 .ToList();
-            Db.Query(query);
+            Database.Query(query);
             indexRequest.Method = Method.POST;
             indexRequest.Selector = () => tableIndexesToKeep;
             indexRequest.Evaluate().ThrowIfError();
@@ -223,7 +226,7 @@ namespace RESTar.SQLite
         public List<SQLColumn> GetSQLColumns()
         {
             var columns = new List<SQLColumn>();
-            Db.Query($"PRAGMA table_info({TableName})", row => columns.Add(new SQLColumn(row.GetString(1), row.GetString(2).ParseSQLDataType())));
+            Database.Query($"PRAGMA table_info({TableName})", row => columns.Add(new SQLColumn(row.GetString(1), row.GetString(2).ParseSQLDataType())));
             return columns;
         }
 
@@ -246,7 +249,7 @@ namespace RESTar.SQLite
             TransactMappings = ColumnMappings.Where(mapping => !mapping.CLRProperty.IsIgnored).ToArray();
         }
 
-        private void Drop() => Db.Query($"DROP TABLE {TableName};");
+        private void Drop() => Database.Query($"DROP TABLE {TableName};");
 
         private string GetCreateTableSQL() => $"CREATE TABLE {TableName} ({(ColumnMappings ?? GetDeclaredColumnMappings()).ToSQL()});";
 

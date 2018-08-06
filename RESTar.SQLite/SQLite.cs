@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Data;
 using System.Data.SQLite;
-using RESTar.Linq;
 using RESTar.SQLite.Meta;
 
 namespace RESTar.SQLite
@@ -12,6 +11,8 @@ namespace RESTar.SQLite
     /// <typeparam name="T">The SQLiteTable class to bind SQL operations to</typeparam>
     public static class SQLite<T> where T : SQLiteTable
     {
+        private const string RowIdParameter = "@rowId";
+
         /// <summary>
         /// Selects entities in the SQLite database using the RESTar.SQLite O/RM mapping 
         /// facilities. Returns an IEnumerable of the provided resource type.
@@ -20,11 +21,11 @@ namespace RESTar.SQLite
         /// by "SELECT * FROM {type} " in the actual query</param>
         /// <param name="onlyRowId">Populates only RowIds for the resulting entities</param>
         /// <returns></returns>
-        public static IEnumerable<T> Select(string where = null, bool onlyRowId = false)
-        {
-            var sql = $"SELECT RowId,* FROM {TableMapping<T>.TableName} {where}";
-            return new EntityEnumerable<T>(sql, onlyRowId);
-        }
+        public static IEnumerable<T> Select(string where = null, bool onlyRowId = false) => new EntityEnumerable<T>
+        (
+            sql: $"SELECT RowId,* FROM {TableMapping<T>.TableName} {where}",
+            onlyRowId: onlyRowId
+        );
 
         /// <summary>
         /// Inserts an IEnumerable of SQLiteTable entities into the appropriate SQLite database
@@ -33,32 +34,25 @@ namespace RESTar.SQLite
         public static int Insert(IEnumerable<T> entities)
         {
             if (entities == null) return 0;
-            var count = 0;
             var (name, columns, param, mappings) = TableMapping<T>.InsertSpec;
-            using (var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn())
-            using (var command = connection.CreateCommand())
-            using (var transaction = connection.BeginTransaction())
+            return Database.Transact(command =>
             {
+                var count = 0;
                 command.CommandText = $"INSERT INTO {name} ({columns}) VALUES ({string.Join(", ", param)})";
                 for (var i = 0; i < mappings.Length; i++)
                     command.Parameters.Add(param[i], mappings[i].SQLColumn.DbType.GetValueOrDefault());
-                try
+                foreach (var entity in entities)
                 {
-                    foreach (var entity in entities)
+                    entity._OnInsert();
+                    for (var i = 0; i < mappings.Length; i++)
                     {
-                        entity._OnInsert();
-                        for (var i = 0; i < mappings.Length; i++)
-                            command.Parameters[param[i]].Value = mappings[i].CLRProperty.Get?.Invoke(entity); // ?.MakeSQLValueLiteral();
-                        count += command.ExecuteNonQuery();
+                        object propertyValue = mappings[i].CLRProperty.Get?.Invoke(entity);
+                        command.Parameters[param[i]].Value = propertyValue;
                     }
-                    transaction.Commit();
+                    count += command.ExecuteNonQuery();
                 }
-                catch
-                {
-                    transaction.Rollback();
-                }
-            }
-            return count;
+                return count;
+            });
         }
 
         /// <summary>
@@ -68,15 +62,27 @@ namespace RESTar.SQLite
         public static int Update(IEnumerable<T> updatedEntities)
         {
             if (updatedEntities == null) return 0;
-            var count = 0;
-            var sqlStub = $"UPDATE {TableMapping<T>.TableName} SET ";
-            Db.Transact(command => updatedEntities.ForEach(updatedEntity =>
+            var (name, set, param, mappings) = TableMapping<T>.UpdateSpec;
+            return Database.Transact(command =>
             {
-                updatedEntity._OnUpdate();
-                command.CommandText = $"{sqlStub} {updatedEntity.ToSQLiteUpdateSet()} WHERE RowId={updatedEntity.RowId}";
-                count += command.ExecuteNonQuery();
-            }));
-            return count;
+                var count = 0;
+                command.CommandText = $"UPDATE {name} SET {set} WHERE RowId = {RowIdParameter}";
+                command.Parameters.Add(RowIdParameter, DbType.Int64);
+                for (var i = 0; i < mappings.Length; i++)
+                    command.Parameters.Add(param[i], mappings[i].SQLColumn.DbType.GetValueOrDefault());
+                foreach (var entity in updatedEntities)
+                {
+                    entity._OnUpdate();
+                    command.Parameters[RowIdParameter].Value = entity.RowId;
+                    for (var i = 0; i < mappings.Length; i++)
+                    {
+                        object propertyValue = mappings[i].CLRProperty.Get?.Invoke(entity);
+                        command.Parameters[param[i]].Value = propertyValue;
+                    }
+                    count += command.ExecuteNonQuery();
+                }
+                return count;
+            });
         }
 
         /// <summary>
@@ -88,15 +94,19 @@ namespace RESTar.SQLite
         public static int Delete(IEnumerable<T> entities)
         {
             if (entities == null) return 0;
-            var sqlstub = $"DELETE FROM {TableMapping<T>.TableName} WHERE RowId=";
-            var count = 0;
-            Db.Transact(command => entities.ForEach(entity =>
+            return Database.Transact(command =>
             {
-                entity._OnDelete();
-                command.CommandText = sqlstub + entity.RowId;
-                count += command.ExecuteNonQuery();
-            }));
-            return count;
+                var count = 0;
+                command.CommandText = $"DELETE FROM {TableMapping<T>.TableName} WHERE RowId = {RowIdParameter}";
+                command.Parameters.Add(RowIdParameter, DbType.Int64);
+                foreach (var entity in entities)
+                {
+                    entity._OnDelete();
+                    command.Parameters[RowIdParameter].Value = entity.RowId;
+                    count += command.ExecuteNonQuery();
+                }
+                return count;
+            });
         }
 
         /// <summary>
@@ -108,12 +118,9 @@ namespace RESTar.SQLite
         public static long Count(string where = null)
         {
             var sql = $"SELECT COUNT(RowId) FROM {TableMapping<T>.TableName} {where}";
-            using (var connection = new SQLiteConnection(Settings.ConnectionString))
-            {
-                connection.Open();
-                using (var command = new SQLiteCommand(sql, connection) {CommandType = CommandType.Text})
-                    return (long) command.ExecuteScalar();
-            }
+            using (var connection = new SQLiteConnection(Settings.ConnectionString).OpenAndReturn())
+            using (var command = new SQLiteCommand(sql, connection))
+                return (long) (command.ExecuteScalar() ?? 0L);
         }
     }
 }

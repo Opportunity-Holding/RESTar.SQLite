@@ -47,6 +47,26 @@ namespace RESTarTutorial
         public decimal DECIMAL { get; set; }
     }
 
+    public enum MyEnum
+    {
+        A,
+        B,
+        C
+    }
+
+    [RESTar, SQLite]
+    public class EnumTest : SQLiteTable
+    {
+        public int Int { get; set; }
+        public MyEnum Enum { get; set; }
+
+        protected override void OnInsert()
+        {
+            base.OnInsert();
+            Enum = MyEnum.B;
+        }
+    }
+
     [RESTar, SQLite]
     public class SQLiteResource : SQLiteTable
     {

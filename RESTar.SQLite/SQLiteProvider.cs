@@ -32,7 +32,6 @@ namespace RESTar.SQLite
             IsInitiated = true;
         }
 
-
         /// <inheritdoc />
         protected override bool IsValid(IEntityResource resource, out string reason)
         {
@@ -83,6 +82,13 @@ namespace RESTar.SQLite
             if (!Directory.Exists(directory)) Directory.CreateDirectory(directory);
             if (!File.Exists(databasePath)) SQLiteConnection.CreateFile(databasePath);
 
+            var builder = new SQLiteConnectionStringBuilder
+            {
+                DataSource = databasePath,
+                Version = 3,
+                DateTimeKind = DateTimeKind.Utc
+            };
+
             Starcounter.Db.TransactAsync(() =>
             {
                 Settings.All.ForEach(Starcounter.Db.Delete);
@@ -91,7 +97,7 @@ namespace RESTar.SQLite
                     DatabasePath = databasePath,
                     DatabaseDirectory = directory,
                     DatabaseName = fileName,
-                    DatabaseConnectionString = $"Data Source={databasePath};Version=3;"
+                    DatabaseConnectionString = builder.ToString()
                 };
             });
             DatabaseIndexer = new SQLiteIndexer();

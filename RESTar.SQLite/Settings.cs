@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Serialization;
+using RESTar.Resources;
 using Starcounter;
 
 namespace RESTar.SQLite
@@ -29,7 +29,7 @@ namespace RESTar.SQLite
         /// <summary>
         /// The connection string to use when accessing the database
         /// </summary>
-        [IgnoreDataMember] public string DatabaseConnectionString { get; internal set; }
+        [RESTarMember(ignore: true)] public string DatabaseConnectionString { get; internal set; }
 
         /// <summary>
         /// The SQLite database connection string to use for manual access to the SQLite
@@ -38,11 +38,11 @@ namespace RESTar.SQLite
         public static string ConnectionString => Instance.DatabaseConnectionString;
 
         private const string SQL = "SELECT t FROM RESTar.SQLite.Settings t";
-        internal static IEnumerable<Settings> All => Starcounter.Db.SQL<Settings>(SQL);
+        internal static IEnumerable<Settings> All => Db.SQL<Settings>(SQL);
 
         /// <summary>
         /// The Settings instance
         /// </summary>
-        public static Settings Instance => Starcounter.Db.SQL<Settings>(SQL).FirstOrDefault();
+        public static Settings Instance => Db.SQL<Settings>(SQL).FirstOrDefault();
     }
 }
